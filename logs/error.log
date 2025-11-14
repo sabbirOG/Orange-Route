@@ -1,0 +1,53 @@
+# OrangeRoute Error Log
+# This file will contain error messages from the application
+# Last cleaned: $(date)[23-Sep-2025 02:16:02 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 02:16:02 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 02:50:51 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 02:50:51 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 02:53:21 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 02:53:21 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 03:00:56 Asia/Dhaka] Logout attempt for user ID: 1
+[23-Sep-2025 03:00:56 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 03:01:19 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 03:01:19 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 03:02:39 Asia/Dhaka] Logout attempt for user ID: 3
+[23-Sep-2025 03:02:39 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 03:04:59 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 03:04:59 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 03:21:11 Asia/Dhaka] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'latitude' in 'field list' in C:\xampp\htdocs\OrangeRoute\backend\update_location.php:51
+Stack trace:
+#0 C:\xampp\htdocs\OrangeRoute\backend\update_location.php(51): mysqli->prepare('UPDATE shuttles...')
+#1 {main}
+  thrown in C:\xampp\htdocs\OrangeRoute\backend\update_location.php on line 51
+[23-Sep-2025 03:21:15 Asia/Dhaka] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'latitude' in 'field list' in C:\xampp\htdocs\OrangeRoute\backend\update_location.php:51
+Stack trace:
+#0 C:\xampp\htdocs\OrangeRoute\backend\update_location.php(51): mysqli->prepare('UPDATE shuttles...')
+#1 {main}
+  thrown in C:\xampp\htdocs\OrangeRoute\backend\update_location.php on line 51
+[23-Sep-2025 03:23:17 Asia/Dhaka] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'latitude' in 'field list' in C:\xampp\htdocs\OrangeRoute\backend\update_location.php:51
+Stack trace:
+#0 C:\xampp\htdocs\OrangeRoute\backend\update_location.php(51): mysqli->prepare('UPDATE shuttles...')
+#1 {main}
+  thrown in C:\xampp\htdocs\OrangeRoute\backend\update_location.php on line 51
+[23-Sep-2025 03:23:28 Asia/Dhaka] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'latitude' in 'field list' in C:\xampp\htdocs\OrangeRoute\backend\update_location.php:51
+Stack trace:
+#0 C:\xampp\htdocs\OrangeRoute\backend\update_location.php(51): mysqli->prepare('UPDATE shuttles...')
+#1 {main}
+  thrown in C:\xampp\htdocs\OrangeRoute\backend\update_location.php on line 51
+[23-Sep-2025 03:25:48 Asia/Dhaka] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'latitude' in 'field list' in C:\xampp\htdocs\OrangeRoute\backend\update_location.php:51
+Stack trace:
+#0 C:\xampp\htdocs\OrangeRoute\backend\update_location.php(51): mysqli->prepare('UPDATE shuttles...')
+#1 {main}
+  thrown in C:\xampp\htdocs\OrangeRoute\backend\update_location.php on line 51
+[23-Sep-2025 04:49:52 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 04:49:52 Asia/Dhaka] Logout successful, redirecting to landing page
+[23-Sep-2025 05:02:44 Asia/Dhaka] Logout attempt for user ID: 2
+[23-Sep-2025 05:02:44 Asia/Dhaka] Logout successful, redirecting to landing page
+[24-Sep-2025 03:59:28 Asia/Dhaka] Logout attempt for user ID: 3
+[24-Sep-2025 03:59:28 Asia/Dhaka] Logout successful, redirecting to landing page
+[03-Oct-2025 23:02:02 Asia/Dhaka] Logout attempt for user ID: 2
+[03-Oct-2025 23:02:02 Asia/Dhaka] Logout successful, redirecting to landing page
+[03-Oct-2025 23:03:32 Asia/Dhaka] Logout attempt for user ID: 2
+[03-Oct-2025 23:03:32 Asia/Dhaka] Logout successful, redirecting to landing page
+[06-Oct-2025 18:08:30 Asia/Dhaka] Logout attempt for user ID: 2
+[06-Oct-2025 18:08:30 Asia/Dhaka] Logout successful, redirecting to landing page
