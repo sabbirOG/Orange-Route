@@ -8,17 +8,22 @@ if (OrangeRoute\Auth::check()) {
 $error = OrangeRoute\Session::flash('error');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
+    $studentId = trim($_POST['student_id'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    if (empty($email) || empty($password)) {
+    if (empty($studentId) || empty($password)) {
         $error = 'Please fill all fields';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Invalid email format';
-    } elseif (OrangeRoute\Auth::login($email, $password)) {
-        redirect('pages/map.php');
+    } elseif (!preg_match('/^[0-9]{9,10}$/', $studentId)) {
+        $error = 'Invalid student ID format. Must be 9 or 10 digits.';
     } else {
-        $error = 'Invalid credentials';
+        // Convert student ID to email
+        $email = $studentId . '@student.orangeroute.local';
+        
+        if (OrangeRoute\Auth::login($email, $password)) {
+            redirect('pages/map.php');
+        } else {
+            $error = 'Invalid credentials';
+        }
     }
 }
 ?>
@@ -57,13 +62,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <form method="POST">
                     <div class="form-group">
-                        <label>Email Address</label>
-                        <input type="email" name="email" required placeholder="your.email@university.edu" autocomplete="email" value="<?= e($_POST['email'] ?? '') ?>">
+                        <label>Student ID</label>
+                        <input type="text" name="student_id" required placeholder="123456789" pattern="[0-9]{9,10}" maxlength="10" autocomplete="off" value="<?= e($_POST['student_id'] ?? '') ?>">
+                        <small class="text-muted">Enter your 9 or 10 digit student ID</small>
                     </div>
                     
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" name="password" required placeholder="Enter your password" autocomplete="current-password">
+                        <div style="position: relative;">
+                            <input type="password" id="login-password" name="password" required placeholder="Enter your password" autocomplete="current-password" style="padding-right: 60px;">
+                            <button type="button" id="login-toggle" onclick="togglePassword('login-password', 'login-toggle')" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px 8px; color: var(--primary); font-size: 13px; font-weight: 500; transition: opacity 0.2s;" aria-label="Toggle password visibility">
+                                Show
+                            </button>
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary">Sign In</button>
@@ -79,5 +90,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
+    <script>
+    function togglePassword(inputId, buttonId) {
+        const input = document.getElementById(inputId);
+        const button = document.getElementById(buttonId);
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.textContent = 'Hide';
+        } else {
+            input.type = 'password';
+            button.textContent = 'Show';
+        }
+    }
+    </script>
 </body>
 </html>

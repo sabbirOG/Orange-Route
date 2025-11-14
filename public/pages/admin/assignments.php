@@ -75,7 +75,7 @@ $routes = OrangeRoute\Database::fetchAll("
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#FF6B35">
-    <title>Driver Assignments - Admin</title>
+    <title>Manage Assignments - Admin</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
     <style>
         .assignment-card {
@@ -92,11 +92,8 @@ $routes = OrangeRoute\Database::fetchAll("
     </style>
 </head>
 <body>
-    <div class="top-bar">
-        <a href="../admin.php" style="text-decoration: none;">← Back</a>
-        <div class="logo">Assignments</div>
-        <div></div>
-    </div>
+<?php $title='Assignments'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
+    <!-- Legacy inline top bar removed; using shared partial -->
     
     <div class="container">
         <?php if ($success): ?>

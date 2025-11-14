@@ -20,7 +20,7 @@ $assignment = OrangeRoute\Database::fetch(
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
 </head>
 <body>
-    <?php $title = 'Driver Mode'; $rightActionHtml = '<button id="toggle-tracking" class="btn btn-primary" style="width: auto; padding: 8px 16px; min-height: auto;">Start Tracking</button>'; include __DIR__ . '/_partials/top_bar.php'; ?>
+    <?php $title = 'Driver Mode'; $backHref = 'map.php'; $rightActionHtml = '<button id="toggle-tracking" class="btn btn-primary" style="width: auto; padding: 8px 16px; min-height: auto;">Start Tracking</button>'; include __DIR__ . '/_partials/top_bar.php'; ?>
     
     <div class="container">
         <?php if ($assignment): ?>

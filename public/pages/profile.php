@@ -14,7 +14,7 @@ $user = OrangeRoute\Auth::user();
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
 </head>
 <body>
-    <?php $title = 'Profile'; $rightActionHtml = '<a href="../api/logout.php" style="color: var(--danger); text-decoration: none; font-weight: 600;">Logout</a>'; include __DIR__ . '/_partials/top_bar.php'; ?>
+    <?php $title = 'Profile'; $backHref = 'map.php'; $rightActionHtml = '<a href="../api/logout.php" style="color: var(--danger); text-decoration: none; font-weight: 600;">Logout</a>'; include __DIR__ . '/_partials/top_bar.php'; ?>
     
     <div class="container">
         <div class="card text-center">

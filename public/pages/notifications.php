@@ -123,7 +123,7 @@ if (empty($notifications)) {
     </style>
 </head>
 <body>
-    <?php $title = 'Notifications'; include __DIR__ . '/_partials/top_bar.php'; ?>
+    <?php $title = 'Notifications'; $backHref = 'map.php'; include __DIR__ . '/_partials/top_bar.php'; ?>
 
     <div class="container">
         <h2>Notifications</h2>

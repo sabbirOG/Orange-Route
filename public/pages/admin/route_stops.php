@@ -91,11 +91,8 @@ $stops = OrangeRoute\Database::fetchAll("
     </style>
 </head>
 <body>
-    <div class="top-bar">
-        <a href="routes.php" style="text-decoration: none;">← Back</a>
-        <div class="logo">Stops</div>
-        <div></div>
-    </div>
+    <?php $title='Route Stops'; $backHref='routes.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
+    <!-- Legacy inline top bar removed; using shared partial -->
     
     <div class="container">
         <h2><?= e($route['route_name']) ?></h2>

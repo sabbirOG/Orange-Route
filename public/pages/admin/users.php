@@ -69,6 +69,7 @@ $users = OrangeRoute\Database::fetchAll("
     </style>
 </head>
 <body>
+<?php $title='Users'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
     <div class="top-bar">
         <a href="../admin.php" style="text-decoration: none;">← Back</a>
         <div class="logo">Users</div>

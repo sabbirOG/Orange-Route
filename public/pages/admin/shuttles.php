@@ -88,6 +88,7 @@ $shuttles = OrangeRoute\Database::fetchAll("
     </style>
 </head>
 <body>
+<?php $title='Shuttles'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
     <div class="top-bar">
         <a href="../admin.php" style="text-decoration: none;">← Back</a>
         <div class="logo">Shuttles</div>

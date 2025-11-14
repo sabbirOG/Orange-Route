@@ -73,7 +73,7 @@ $routes = OrangeRoute\Database::fetchAll("
     </style>
 </head>
 <body>
-    <?php $title = 'Routes'; include __DIR__ . '/_partials/top_bar.php'; ?>
+    <?php $title = 'Routes'; $backHref = 'map.php'; include __DIR__ . '/_partials/top_bar.php'; ?>
 
     <div class="container">
         <h2>Available Routes</h2>
