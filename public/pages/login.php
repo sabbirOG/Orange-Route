@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#FF6B35">
     <title>Login - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
 </head>
 <body>
     <div class="login-wrapper">

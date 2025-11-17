@@ -10,17 +10,12 @@ class Auth
     public static function login(string $email, string $password): bool
     {
         $user = Database::fetch(
-            "SELECT id, email, password_hash, role, email_verified FROM users WHERE email = ? AND is_active = 1",
+            "SELECT id, email, password_hash, role FROM users WHERE email = ? AND is_active = 1",
             [$email]
         );
         
         if (!$user || !password_verify($password, $user['password_hash'])) {
             return false;
-        }
-        
-        // Admins don't need email verification
-        if ($user['role'] !== 'admin' && !$user['email_verified']) {
-            throw new \RuntimeException('Please verify your email first');
         }
         
         Session::set('user_id', $user['id']);
@@ -31,46 +26,32 @@ class Auth
         return true;
     }
     
-    public static function register(string $email, string $password, string $role = 'student'): int
+    public static function register(string $email, string $password, string $role = 'student', string $studentId = null): int
     {
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        
+        // Generate username from student ID if provided, otherwise from email
+        if ($studentId) {
+            $username = $studentId;
+        } else {
+            $username = strtolower(explode('@', $email)[0]);
+        }
+        
+        // Make username unique if it already exists
+        $baseUsername = $username;
+        $counter = 1;
+        while (Database::fetch("SELECT id FROM users WHERE username = ?", [$username])) {
+            $username = $baseUsername . $counter;
+            $counter++;
+        }
         
         $userId = Database::insert(
-            "INSERT INTO users (email, password_hash, role, verification_token, verification_expires_at, created_at) 
+            "INSERT INTO users (username, email, password_hash, role, student_id, created_at) 
              VALUES (?, ?, ?, ?, ?, NOW())",
-            [$email, $hash, $role, $token, $expires]
+            [$username, $email, $hash, $role, $studentId]
         );
-        
-        // Send verification email
-        Email::sendVerification($email, $token);
         
         return $userId;
-    }
-    
-    public static function verifyEmail(string $token): bool
-    {
-        $user = Database::fetch(
-            "SELECT id, verification_expires_at FROM users 
-             WHERE verification_token = ? AND email_verified = 0",
-            [$token]
-        );
-        
-        if (!$user) {
-            return false;
-        }
-        
-        if (strtotime($user['verification_expires_at']) < time()) {
-            throw new \RuntimeException('Verification link expired');
-        }
-        
-        Database::query(
-            "UPDATE users SET email_verified = 1, verification_token = NULL WHERE id = ?",
-            [$user['id']]
-        );
-        
-        return true;
     }
     
     public static function requestPasswordReset(string $email): bool

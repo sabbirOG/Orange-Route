@@ -62,6 +62,7 @@ $shuttles = OrangeRoute\Database::fetchAll("
     <meta name="theme-color" content="#FF6B35">
     <title>Manage Shuttles - Admin</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
     <style>
         .shuttle-card {
             background: white;

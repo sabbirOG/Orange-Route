@@ -1,4 +1,4 @@
-<?php
+ <?php
 require_once __DIR__ . '/../config/bootstrap.php';
 
 // Redirect to map if logged in, else to login

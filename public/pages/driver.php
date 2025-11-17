@@ -18,6 +18,7 @@ $assignment = OrangeRoute\Database::fetch(
     <meta name="theme-color" content="#FF6B35">
     <title>Driver Mode - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
 </head>
 <body>
     <?php $title = 'Driver Mode'; $backHref = 'map.php'; $rightActionHtml = '<button id="toggle-tracking" class="btn btn-primary" style="width: auto; padding: 8px 16px; min-height: auto;">Start Tracking</button>'; include __DIR__ . '/_partials/top_bar.php'; ?>

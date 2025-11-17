@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../../config/bootstrap.php';
+require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 
 header('Content-Type: application/json');
@@ -22,18 +22,18 @@ if (!isset($_FILES['profile_picture'])) {
 $file = $_FILES['profile_picture'];
 
 // Validate file
-$allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-$maxSize = 5 * 1024 * 1024; // 5MB
+$allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'];
+$maxSize = 500 * 1024; // 500KB
 
 if (!in_array($file['type'], $allowedTypes)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Invalid file type. Use JPEG, PNG, GIF or WebP']);
+    echo json_encode(['error' => 'Invalid file type. Only image files are allowed']);
     exit;
 }
 
 if ($file['size'] > $maxSize) {
     http_response_code(400);
-    echo json_encode(['error' => 'File too large. Maximum 5MB']);
+    echo json_encode(['error' => 'File too large. Maximum 500KB']);
     exit;
 }
 
@@ -50,8 +50,20 @@ $filepath = $uploadDir . $filename;
 
 // Move uploaded file
 if (!move_uploaded_file($file['tmp_name'], $filepath)) {
+    $error = error_get_last();
     http_response_code(500);
-    echo json_encode(['error' => 'Failed to save file']);
+    echo json_encode([
+        'error' => 'Failed to save file',
+        'debug' => [
+            'upload_dir' => $uploadDir,
+            'filepath' => $filepath,
+            'tmp_name' => $file['tmp_name'],
+            'is_uploaded' => is_uploaded_file($file['tmp_name']),
+            'dir_exists' => is_dir($uploadDir),
+            'dir_writable' => is_writable($uploadDir),
+            'last_error' => $error
+        ]
+    ]);
     exit;
 }
 
@@ -64,7 +76,7 @@ if ($user['profile_picture']) {
 }
 
 // Update database
-$relativePath = '/uploads/profile_pictures/' . $filename;
+$relativePath = '/OrangeRoute/uploads/profile_pictures/' . $filename;
 OrangeRoute\Database::query(
     "UPDATE users SET profile_picture = ? WHERE id = ?",
     [$relativePath, $user['id']]

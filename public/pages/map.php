@@ -121,6 +121,7 @@ else {
     <meta name="theme-color" content="#FF6B35">
     <title><?= $role === 'admin' ? 'Admin' : ($role === 'driver' ? 'Driver' : 'Student') ?> Dashboard - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
     <style>
         .dashboard-header {
             background: linear-gradient(135deg, #FF6B35 0%, #FF8C61 100%);

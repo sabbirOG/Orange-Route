@@ -38,6 +38,7 @@ $activeShuttles = OrangeRoute\Database::fetchAll("
     <meta name="theme-color" content="#FF6B35">
     <title>Admin Dashboard - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
 </head>
 <body>
     <?php $title = 'Admin'; include __DIR__ . '/_partials/top_bar.php'; ?>

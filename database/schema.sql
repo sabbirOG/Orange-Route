@@ -15,7 +15,7 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255),
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('admin', 'driver', 'student') NOT NULL DEFAULT 'student',
     first_name VARCHAR(100),
@@ -23,15 +23,13 @@ CREATE TABLE users (
     phone VARCHAR(20),
     student_id VARCHAR(50),
     profile_picture VARCHAR(255),
-    email_verified BOOLEAN DEFAULT FALSE,
-    verification_token VARCHAR(64),
-    verification_expires_at DATETIME,
     is_active BOOLEAN DEFAULT TRUE,
     last_login_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_email (email),
-    INDEX idx_role (role)
+    INDEX idx_role (role),
+    UNIQUE INDEX idx_student_id (student_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Password resets table

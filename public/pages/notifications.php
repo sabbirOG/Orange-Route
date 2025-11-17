@@ -76,6 +76,7 @@ if (empty($notifications)) {
     <meta name="theme-color" content="#FF6B35">
     <title>Notifications - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
     <style>
         .notification-card {
             background: white;

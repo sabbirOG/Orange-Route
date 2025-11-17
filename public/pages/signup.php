@@ -6,7 +6,6 @@ if (OrangeRoute\Auth::check()) {
 }
 
 $error = null;
-$success = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $studentId = trim($_POST['student_id'] ?? '');
@@ -24,9 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate email from student ID
             $email = $studentId . '@student.orangeroute.local';
             OrangeRoute\Auth::register($email, $password, $role, $studentId);
-            $success = 'Account created! Please login with your Student ID.';
+            
+            // Auto-login after successful registration
+            if (OrangeRoute\Auth::login($email, $password)) {
+                redirect('pages/map.php');
+            }
         } catch (\Exception $e) {
-            $error = 'Student ID already registered';
+            $error = 'Account already exists with this Student ID';
         }
     }
 }
@@ -39,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#FF6B35">
     <title>Sign Up - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <script src="/OrangeRoute/assets/js/theme.js"></script>
 </head>
 <body>
     <div class="signup-wrapper">
@@ -58,10 +62,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <?php if ($error): ?>
                 <div class="alert alert-error" style="margin-bottom: 20px;"><?= e($error) ?></div>
-            <?php endif; ?>
-            
-            <?php if ($success): ?>
-                <div class="alert alert-success" style="margin-bottom: 20px;"><?= e($success) ?></div>
             <?php endif; ?>
             
             <div class="signup-card">
