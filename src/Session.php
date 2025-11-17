@@ -85,4 +85,16 @@ class Session
         }
         self::set("_flash_{$key}", $value);
     }
+    
+    public static function setFlash(string $key, $value): void
+    {
+        self::set("_flash_{$key}", $value);
+    }
+    
+    public static function getFlash(string $key)
+    {
+        $val = self::get("_flash_{$key}");
+        self::remove("_flash_{$key}");
+        return $val;
+    }
 }

@@ -6,6 +6,7 @@ if (OrangeRoute\Auth::check()) {
 }
 
 $error = OrangeRoute\Session::flash('error');
+$success = OrangeRoute\Session::flash('success');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $studentId = trim($_POST['student_id'] ?? '');
@@ -22,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (OrangeRoute\Auth::login($email, $password)) {
             redirect('pages/map.php');
         } else {
-            $error = 'Invalid credentials';
+            $error = 'Incorrect Student ID or password. Please check your credentials and try again.';
         }
     }
 }
@@ -52,6 +53,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <h1 class="logo-title">OrangeRoute</h1>
                 <p class="logo-subtitle">Track your shuttle in real-time</p>
             </div>
+            
+            <?php if ($success): ?>
+                <div class="alert alert-success" style="display: flex; align-items: center; gap: 10px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span><?= e($success) ?></span>
+                </div>
+            <?php endif; ?>
             
             <?php if ($error): ?>
                 <div class="alert alert-error"><?= e($error) ?></div>
