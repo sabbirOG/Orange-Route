@@ -1,4 +1,4 @@
-# 🚍 OrangeRoute - Mobile-First Shuttle Tracking
+# 🚍 UIU Shuttle Tracker - OrangeRoute
 
 A fast, simple, mobile-optimized web app for tracking university shuttles in real-time.
 
@@ -9,8 +9,6 @@ A fast, simple, mobile-optimized web app for tracking university shuttles in rea
 - 🚗 **Driver Mode** - Drivers can share their location automatically
 - 👥 **Multi-Role Support** - Students, Drivers, and Admin accounts
 - ⚡ **Fast & Lightweight** - Vanilla JS, no heavy frameworks
-- 🔒 **Secure** - Password hashing, prepared statements, CSRF protection
-- 📲 **PWA Ready** - Install as an app on your phone
 
 ## Tech Stack
 
@@ -19,37 +17,6 @@ A fast, simple, mobile-optimized web app for tracking university shuttles in rea
 - **Maps**: Leaflet.js + OpenStreetMap
 - **Database**: MySQL 8.0+
 
-## Quick Setup
-
-### 1. Install Dependencies
-```bash
-composer install
-```
-
-### 2. Configure Environment
-```bash
-cp .env.example .env
-# Edit .env with your database credentials
-```
-
-### 3. Create Database
-```sql
-CREATE DATABASE orangeroute CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE orangeroute;
-SOURCE database/schema_v2.sql;
-```
-
-### 4. Start Server
-```bash
-php -S localhost:8000 -t public
-```
-
-### 5. Open in Browser
-Visit: http://localhost:8000
-
-**Default Admin Login:**
-- Email: `admin@orangeroute.local`
-- Password: `Admin@123` ⚠️ Change immediately!
 
 ## Project Structure
 
@@ -77,14 +44,13 @@ OrangeRoute/
 
 ## Mobile Features
 
-✅ Touch-friendly buttons (min 44px)  
+✅ Mobile Friendly UI
 ✅ Bottom navigation for thumb access  
 ✅ Swipeable bottom sheets  
 ✅ Geolocation integration  
 ✅ Real-time location tracking  
 ✅ Installable as PWA  
-✅ Offline support (coming soon)  
-✅ Fast loading (<2s)  
+✅ Fast loading
 
 ## Usage
 
