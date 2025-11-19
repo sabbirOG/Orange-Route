@@ -11,6 +11,13 @@ class Database
 {
     private static ?PDO $conn = null;
     
+    public static function tableExists(string $table): bool
+    {
+        $sql = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?";
+        $count = (int) self::fetchValue($sql, [$table]);
+        return $count > 0;
+    }
+    
     public static function get(): PDO
     {
         if (!self::$conn) {

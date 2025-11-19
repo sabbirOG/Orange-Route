@@ -162,7 +162,7 @@ else {
         .stop-list { margin-top: 12px; }
         .stop-item { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; display: flex; justify-content: space-between; }
         .stop-item:last-child { border-bottom: none; }
-        .quick-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        .quick-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
         .action-btn { background: white; border: 2px solid var(--border); padding: 16px; border-radius: 16px; text-decoration: none; color: var(--text); display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s; }
         .action-btn:active { border-color: var(--primary); transform: scale(0.98); }
         .action-icon { width: 48px; height: 48px; background: linear-gradient(135deg, #FF6B35 0%, #FF8C61 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
@@ -183,7 +183,7 @@ else {
                 <?php elseif ($role === 'driver'): ?>
                     Driver Dashboard
                 <?php else: ?>
-                    Track Your Shuttle
+                    Track Your Routes
                 <?php endif; ?>
             </div>
             <div class="welcome-sub"><?= e($user['email']) ?> • <?= ucfirst(e($role)) ?></div>
@@ -255,15 +255,7 @@ else {
                     </div>
                     <span class="action-label">Users</span>
                 </a>
-                <a href="admin/shuttles.php" class="action-btn">
-                    <div class="action-icon">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                            <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
-                        </svg>
-                    </div>
-                    <span class="action-label">Shuttles</span>
-                </a>
+                <!-- Removed Shuttles action (deprecated) -->
                 <a href="admin/routes.php" class="action-btn">
                     <div class="action-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -401,7 +393,7 @@ else {
                 </div>
             </div>
 
-            <h3 class="section-title">Live Shuttles</h3>
+            <h3 class="section-title">Live Routes</h3>
             <?php if (count($active_shuttles) > 0): ?>
                 <?php foreach ($active_shuttles as $shuttle): ?>
                     <?php $is_active = $shuttle['last_seen'] && $shuttle['minutes_ago'] < 5; ?>
@@ -438,7 +430,7 @@ else {
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="card">
-                    <p class="text-muted text-center">No shuttles available right now</p>
+                    <p class="text-muted text-center">No routes available right now</p>
                 </div>
             <?php endif; ?>
 

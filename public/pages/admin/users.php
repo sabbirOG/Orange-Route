@@ -14,6 +14,27 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
+    if ($action === 'add_driver') {
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $username = trim($_POST['username'] ?? '');
+        
+        if (empty($email) || empty($password)) {
+            $error = 'Email and password are required';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Invalid email format';
+        } elseif (strlen($password) < 6) {
+            $error = 'Password must be at least 6 characters';
+        } else {
+            try {
+                OrangeRoute\Auth::register($email, $password, 'driver', $username);
+                $success = 'Driver account created successfully';
+            } catch (Exception $e) {
+                $error = 'Email already exists';
+            }
+        }
+    }
+    
     if ($action === 'toggle_active') {
         $userId = $_POST['user_id'] ?? 0;
         $current = OrangeRoute\Database::fetchValue("SELECT is_active FROM users WHERE id = ?", [$userId]);
@@ -41,7 +62,7 @@ $users = OrangeRoute\Database::fetchAll("
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#FF6B35">
-    <title>Manage Users - Admin</title>
+    <title>Manage Drivers - Admin</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
     <script src="/OrangeRoute/assets/js/theme.js"></script>
     <style>
@@ -70,10 +91,10 @@ $users = OrangeRoute\Database::fetchAll("
     </style>
 </head>
 <body>
-<?php $title='Users'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
+<?php $title='Drivers'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
     <div class="top-bar">
         <a href="../admin.php" style="text-decoration: none;">← Back</a>
-        <div class="logo">Users</div>
+        <div class="logo">Drivers</div>
         <div></div>
     </div>
     
@@ -84,6 +105,26 @@ $users = OrangeRoute\Database::fetchAll("
         <?php if ($error): ?>
             <div class="alert alert-error"><?= e($error) ?></div>
         <?php endif; ?>
+        
+        <div class="card">
+            <h3>Add New Driver</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="add_driver">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" required placeholder="driver@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Username (Optional)</label>
+                    <input type="text" name="username" placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" required placeholder="Minimum 6 characters" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary">Add Driver</button>
+            </form>
+        </div>
         
         <h2>All Users (<?= count($users) ?>)</h2>
         

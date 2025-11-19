@@ -15,58 +15,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action === 'assign') {
-        $shuttleId = (int)($_POST['shuttle_id'] ?? 0);
         $driverId = (int)($_POST['driver_id'] ?? 0);
         $routeId = (int)($_POST['route_id'] ?? 0);
         
         try {
-            // Unassign current driver from this shuttle
-            OrangeRoute\Database::query("UPDATE shuttle_assignments SET is_current = 0 WHERE shuttle_id = ?", [$shuttleId]);
+            // Unassign current driver from this route
+            OrangeRoute\Database::query("UPDATE route_assignments SET is_current = 0 WHERE route_id = ?", [$routeId]);
             
             // Assign new driver to selected route
             OrangeRoute\Database::query(
-                "INSERT INTO shuttle_assignments (shuttle_id, driver_id, route_id) VALUES (?, ?, ?)",
-                [$shuttleId, $driverId, $routeId]
+                "INSERT INTO route_assignments (route_id, driver_id, is_current) VALUES (?, ?, 1)",
+                [$routeId, $driverId]
             );
             $success = 'Driver assigned successfully';
         } catch (Exception $e) {
-            $error = 'Error assigning driver';
+            $error = 'Error assigning driver: ' . $e->getMessage();
         }
     }
     
     if ($action === 'unassign') {
         $assignmentId = (int)($_POST['assignment_id'] ?? 0);
-        OrangeRoute\Database::query("UPDATE shuttle_assignments SET is_current = 0 WHERE id = ?", [$assignmentId]);
+        OrangeRoute\Database::query("UPDATE route_assignments SET is_current = 0 WHERE id = ?", [$assignmentId]);
         $success = 'Driver unassigned';
     }
 }
 
 // Get current assignments
 $assignments = OrangeRoute\Database::fetchAll("
-    SELECT sa.id, sa.assigned_at, s.shuttle_name, s.registration_number, 
+    SELECT ra.id, ra.assigned_at, r.route_name, 
            u.email as driver_email, u.username as driver_name
-    FROM shuttle_assignments sa
-    JOIN shuttles s ON sa.shuttle_id = s.id
-    JOIN users u ON sa.driver_id = u.id
-    WHERE sa.is_current = 1
-    ORDER BY sa.assigned_at DESC
+    FROM route_assignments ra
+    JOIN routes r ON ra.route_id = r.id
+    JOIN users u ON ra.driver_id = u.id
+    WHERE ra.is_current = 1
+    ORDER BY ra.assigned_at DESC
 ");
 
-// Get available drivers (not currently assigned)
+// Get available drivers
 $drivers = OrangeRoute\Database::fetchAll("
     SELECT u.id, u.email, u.username
     FROM users u
     WHERE u.role = 'driver' AND u.is_active = 1
-");
-
-// Get available shuttles
-$shuttles = OrangeRoute\Database::fetchAll("
-    SELECT id, shuttle_name, registration_number FROM shuttles WHERE is_active = 1
+    ORDER BY u.email
 ");
 
 // Get available routes
 $routes = OrangeRoute\Database::fetchAll("
-    SELECT id, route_name FROM routes WHERE is_active = 1
+    SELECT id, route_name FROM routes WHERE is_active = 1 ORDER BY route_name
 ");
 ?>
 <!DOCTYPE html>
@@ -105,20 +100,9 @@ $routes = OrangeRoute\Database::fetchAll("
         <?php endif; ?>
         
         <div class="card">
-            <h3>Assign Driver to Shuttle</h3>
+            <h3>Assign Driver to Route</h3>
             <form method="POST">
                 <input type="hidden" name="action" value="assign">
-                <div class="form-group">
-                    <label>Select Shuttle</label>
-                    <select name="shuttle_id" required>
-                        <option value="">Choose shuttle...</option>
-                        <?php foreach ($shuttles as $shuttle): ?>
-                        <option value="<?= $shuttle['id'] ?>">
-                            <?= e($shuttle['shuttle_name']) ?> (<?= e($shuttle['registration_number']) ?>)
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
                 <div class="form-group">
                     <label>Select Route</label>
                     <select name="route_id" required>
@@ -154,11 +138,11 @@ $routes = OrangeRoute\Database::fetchAll("
         <?php foreach ($assignments as $assignment): ?>
         <div class="assignment-card">
             <div style="margin-bottom: 12px;">
-                <strong style="font-size: 16px;"><?= e($assignment['shuttle_name']) ?></strong>
-                <span class="badge badge-primary"><?= e($assignment['registration_number']) ?></span>
+                <strong style="font-size: 16px;"><?= e($assignment['route_name']) ?></strong>
+                <span class="badge badge-success">Active</span>
             </div>
             <div class="text-muted" style="font-size: 14px; margin-bottom: 12px;">
-                Driver: <?= e($assignment['driver_email']) ?><br>
+                Driver: <?= e($assignment['driver_email']) ?><?= $assignment['driver_name'] ? ' (' . e($assignment['driver_name']) . ')' : '' ?><br>
                 Assigned: <?= date('M d, Y H:i', strtotime($assignment['assigned_at'])) ?>
             </div>
             <form method="POST" onsubmit="return confirm('Unassign this driver?');">
