@@ -90,39 +90,9 @@ Test on real devices or use Chrome DevTools:
 3. Select mobile device
 4. Test touch interactions
 
-## Deployment
-
-For production:
-1. Set `APP_DEBUG=false` in `.env`
-2. Use HTTPS
-3. Set `SESSION_SECURE=true`
-4. Configure proper web server (Apache/Nginx)
-5. Enable gzip compression
-6. Set up database backups
-
-## Performance
-
-- Initial load: ~100KB
-- Map loads: Lazy (on demand)
-- Location updates: Every 10s
-- No jQuery or heavy frameworks
-- Optimized for 3G networks
-
-## Browser Support
-
-- Chrome/Edge (mobile & desktop)
-- Safari (iOS 12+)
-- Firefox
-- Samsung Internet
-
 ## License
 
 MIT License
-
-## Support
-
-For issues: https://github.com/sabbirOG/Orange-Route/issues
-
 ---
 
 **Built for mobile users first** 📱🚍
