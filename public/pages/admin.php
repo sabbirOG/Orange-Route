@@ -16,9 +16,9 @@ $stats = [
 ];
 
 // Get recent activity
-$recentUsers = OrangeRoute\Database::fetchAll("SELECT email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5");
+$recentUsers = OrangeRoute\Database::fetchAll("SELECT username, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5");
 $activeRoutes = OrangeRoute\Database::fetchAll("
-    SELECT r.route_name, u.email as driver_email,
+    SELECT r.route_name, u.username as driver_name,
            MAX(rl.updated_at) as last_update
     FROM routes r
     LEFT JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1
@@ -130,7 +130,7 @@ $activeRoutes = OrangeRoute\Database::fetchAll("
             <h3>Recent Users</h3>
             <?php foreach ($recentUsers as $u): ?>
             <div class="activity-item">
-                <div><strong><?= e($u['email']) ?></strong></div>
+                <div><strong><?= e($u['username'] ?: 'User') ?></strong></div>
                 <div class="activity-time">
                     <span class="badge badge-<?= $u['role'] === 'driver' ? 'success' : 'primary' ?>"><?= e($u['role']) ?></span>
                     • <?= date('M d, Y', strtotime($u['created_at'])) ?>
@@ -145,8 +145,8 @@ $activeRoutes = OrangeRoute\Database::fetchAll("
             <div class="activity-item">
                 <div><strong><?= e($route['route_name']) ?></strong></div>
                 <div class="activity-time">
-                    <?php if ($route['driver_email']): ?>
-                        Driver: <?= e($route['driver_email']) ?>
+                    <?php if ($route['driver_name']): ?>
+                        Driver: <?= e($route['driver_name']) ?>
                     <?php else: ?>
                         No driver assigned
                     <?php endif; ?>

@@ -38,6 +38,7 @@ elseif ($role === 'driver') {
             r.id as route_id,
             r.route_name,
             r.description as route_description,
+            r.is_active,
             sa.assigned_at
         FROM shuttle_assignments sa
         JOIN shuttles s ON sa.shuttle_id = s.id
@@ -75,7 +76,7 @@ elseif ($role === 'driver') {
 
 // ==================== STUDENT DASHBOARD ====================
 else {
-    // Get all active shuttles with real-time location
+    // Get all active shuttles with real-time location (only show routes that are active)
     $active_shuttles = OrangeRoute\Database::fetchAll("
         SELECT 
             s.id,
@@ -83,6 +84,7 @@ else {
             s.registration_number,
             s.capacity,
             r.route_name,
+            r.is_active as route_active,
             sl.latitude,
             sl.longitude,
             sl.created_at as last_seen,
@@ -97,7 +99,7 @@ else {
             FROM shuttle_locations
             WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
         ) sl ON s.id = sl.shuttle_id AND sl.rn = 1
-        WHERE s.is_active = 1
+        WHERE s.is_active = 1 AND r.is_active = 1
         ORDER BY sl.created_at DESC
     ");
     
@@ -301,14 +303,14 @@ else {
 
                 <div class="tracking-card">
                     <h3 style="margin: 0 0 12px 0; font-size: 16px;">Location Tracking</h3>
-                    <button id="trackingBtn" class="tracking-btn inactive">
+                    <button id="trackingBtn" class="tracking-btn <?= $current_assignment['is_active'] ? 'active' : 'inactive' ?>">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M12 6v6l4 2"></path>
                         </svg>
-                        Start Tracking
+                        <?= $current_assignment['is_active'] ? 'Stop Tracking' : 'Start Tracking' ?>
                     </button>
-                    <div id="trackingStatus" class="tracking-status">Not tracking</div>
+                    <div id="trackingStatus" class="tracking-status"><?= $current_assignment['is_active'] ? 'Tracking active...' : 'Not tracking' ?></div>
                     <?php if (isset($last_location)): ?>
                     <p style="font-size: 12px; color: var(--text-light); margin-top: 12px; text-align: center;">
                         Last update: <?= date('M d, g:i A', strtotime($last_location['created_at'])) ?>
@@ -429,8 +431,13 @@ else {
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="card">
-                    <p class="text-muted text-center">No routes available right now</p>
+                <div class="card" style="text-align: center; padding: 30px 20px;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" stroke-width="2" style="margin: 0 auto 16px;">
+                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+                        <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
+                    </svg>
+                    <h3 style="margin-bottom: 8px;">No Active Routes</h3>
+                    <p class="text-muted">All routes are currently inactive. Check back later!</p>
                 </div>
             <?php endif; ?>
 
@@ -463,12 +470,34 @@ else {
         let watchId = null;
         const btn = document.getElementById('trackingBtn');
         const status = document.getElementById('trackingStatus');
+        const routeId = <?= $current_assignment['route_id'] ?>;
         
-        btn.addEventListener('click', () => {
-            if (!isTracking) {
-                startTracking();
-            } else {
-                stopTracking();
+        btn.addEventListener('click', async () => {
+            const isActive = btn.classList.contains('active');
+            
+            try {
+                // Toggle backend route status
+                const resp = await fetch('../api/toggle_route_status.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'route_id=' + routeId + '&active=' + (isActive ? 0 : 1)
+                });
+                const result = await resp.json();
+                
+                if (result.success) {
+                    if (!isActive) {
+                        // Start tracking
+                        startTracking();
+                    } else {
+                        // Stop tracking
+                        stopTracking();
+                    }
+                } else {
+                    alert('Failed to toggle route status');
+                }
+            } catch (error) {
+                console.error('Toggle error:', error);
+                alert('Error toggling route status');
             }
         });
         
@@ -512,7 +541,7 @@ else {
             );
             
             isTracking = true;
-            btn.textContent = 'Stop Tracking';
+            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Stop Tracking';
             btn.classList.remove('inactive');
             btn.classList.add('active');
             status.textContent = 'Tracking active...';

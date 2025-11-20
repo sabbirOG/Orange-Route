@@ -93,11 +93,6 @@ $routes = OrangeRoute\Database::fetchAll("
 </head>
 <body>
 <?php $title='Routes'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
-    <div class="top-bar">
-        <a href="../admin.php" style="text-decoration: none;">← Back</a>
-        <div class="logo">Routes</div>
-        <div></div>
-    </div>
     
     <div class="container">
         <?php if ($success): ?>
@@ -144,15 +139,11 @@ $routes = OrangeRoute\Database::fetchAll("
             
             <div class="route-actions">
                 <a href="route_stops.php?route_id=<?= $r['id'] ?>" class="btn btn-sm" style="background: #2196F3; color: white;">
-                    Manage Stops
+                    Manage Shuttle
                 </a>
-                <form method="POST" style="display: inline;">
-                    <input type="hidden" name="action" value="toggle_active">
-                    <input type="hidden" name="route_id" value="<?= $r['id'] ?>">
-                    <button type="submit" class="btn btn-sm" style="background: <?= $r['is_active'] ? '#f44336' : '#4CAF50' ?>; color: white;">
-                        <?= $r['is_active'] ? 'Deactivate' : 'Activate' ?>
-                    </button>
-                </form>
+                <button onclick="toggleRouteStatus(<?= $r['id'] ?>, <?= $r['is_active'] ? 1 : 0 ?>)" class="btn btn-sm toggle-route-btn" data-route-id="<?= $r['id'] ?>" style="background: <?= $r['is_active'] ? '#FF9800' : '#4CAF50' ?>; color: white;">
+                    <?= $r['is_active'] ? 'Stop Route' : 'Start Route' ?>
+                </button>
                 <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this route?');">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="route_id" value="<?= $r['id'] ?>">
@@ -162,5 +153,38 @@ $routes = OrangeRoute\Database::fetchAll("
         </div>
         <?php endforeach; ?>
     </div>
+    
+    <script>
+    async function toggleRouteStatus(routeId, currentStatus) {
+        const btn = document.querySelector(`button[data-route-id="${routeId}"]`);
+        const newStatus = currentStatus ? 0 : 1;
+        
+        try {
+            const resp = await fetch('../../api/toggle_route_status.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'route_id=' + routeId + '&active=' + newStatus
+            });
+            const result = await resp.json();
+            
+            if (result.success) {
+                // Update button appearance
+                if (newStatus) {
+                    btn.textContent = 'Stop Route';
+                    btn.style.background = '#FF9800';
+                } else {
+                    btn.textContent = 'Start Route';
+                    btn.style.background = '#4CAF50';
+                }
+                btn.setAttribute('onclick', `toggleRouteStatus(${routeId}, ${newStatus})`);
+            } else {
+                alert('Failed to toggle route');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error toggling route status');
+        }
+    }
+    </script>
 </body>
 </html>

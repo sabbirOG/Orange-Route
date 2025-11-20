@@ -15,22 +15,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action === 'add_driver') {
-        $email = trim($_POST['email'] ?? '');
+        $driverId = trim($_POST['driver_id'] ?? '');
         $password = $_POST['password'] ?? '';
         $username = trim($_POST['username'] ?? '');
         
-        if (empty($email) || empty($password)) {
-            $error = 'Email and password are required';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Invalid email format';
+        if (empty($driverId) || empty($password)) {
+            $error = 'Driver ID and password are required';
+        } elseif (!preg_match('/^[0-9]{5}$/', $driverId)) {
+            $error = 'Driver ID must be exactly 5 digits';
         } elseif (strlen($password) < 6) {
             $error = 'Password must be at least 6 characters';
         } else {
             try {
+                // Generate email from driver ID
+                $email = 'driver' . $driverId . '@orangeroute.local';
                 OrangeRoute\Auth::register($email, $password, 'driver', $username);
-                $success = 'Driver account created successfully';
+                // Mark driver as verified
+                OrangeRoute\Database::query("UPDATE users SET email_verified = 1 WHERE email = ?", [$email]);
+                $success = 'Driver account created successfully (ID: ' . $driverId . ')';
             } catch (Exception $e) {
-                $error = 'Email already exists';
+                $error = 'Driver ID already exists';
             }
         }
     }
@@ -92,11 +96,6 @@ $users = OrangeRoute\Database::fetchAll("
 </head>
 <body>
 <?php $title='Drivers'; $backHref='../admin.php'; include __DIR__ . '/../_partials/top_bar.php'; ?>
-    <div class="top-bar">
-        <a href="../admin.php" style="text-decoration: none;">← Back</a>
-        <div class="logo">Drivers</div>
-        <div></div>
-    </div>
     
     <div class="container">
         <?php if ($success): ?>
@@ -111,12 +110,13 @@ $users = OrangeRoute\Database::fetchAll("
             <form method="POST">
                 <input type="hidden" name="action" value="add_driver">
                 <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" required placeholder="driver@example.com">
+                    <label>Driver ID</label>
+                    <input type="text" name="driver_id" required placeholder="12345" pattern="[0-9]{5}" maxlength="5">
+                    <small class="text-muted">Exactly 5 digits for driver login</small>
                 </div>
                 <div class="form-group">
-                    <label>Username (Optional)</label>
-                    <input type="text" name="username" placeholder="John Doe">
+                    <label>Driver Name</label>
+                    <input type="text" name="username" required placeholder="John Doe">
                 </div>
                 <div class="form-group">
                     <label>Password</label>

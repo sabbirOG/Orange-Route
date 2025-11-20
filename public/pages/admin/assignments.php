@@ -43,7 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get current assignments
 $assignments = OrangeRoute\Database::fetchAll("
     SELECT ra.id, ra.assigned_at, r.route_name, 
-           u.email as driver_email, u.username as driver_name
+           u.email as driver_email, u.username as driver_name,
+           REPLACE(u.email, 'driver', '') as driver_id_raw,
+           REPLACE(REPLACE(u.email, 'driver', ''), '@orangeroute.local', '') as driver_id
     FROM route_assignments ra
     JOIN routes r ON ra.route_id = r.id
     JOIN users u ON ra.driver_id = u.id
@@ -119,8 +121,11 @@ $routes = OrangeRoute\Database::fetchAll("
                     <select name="driver_id" required>
                         <option value="">Choose driver...</option>
                         <?php foreach ($drivers as $driver): ?>
+                        <?php 
+                            $driverId = str_replace(['driver', '@orangeroute.local'], '', $driver['email']);
+                        ?>
                         <option value="<?= $driver['id'] ?>">
-                            <?= e($driver['email']) ?> <?= $driver['username'] ? '(' . e($driver['username']) . ')' : '' ?>
+                            ID: <?= e($driverId) ?> <?= $driver['username'] ? '- ' . e($driver['username']) : '' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -142,7 +147,7 @@ $routes = OrangeRoute\Database::fetchAll("
                 <span class="badge badge-success">Active</span>
             </div>
             <div class="text-muted" style="font-size: 14px; margin-bottom: 12px;">
-                Driver: <?= e($assignment['driver_email']) ?><?= $assignment['driver_name'] ? ' (' . e($assignment['driver_name']) . ')' : '' ?><br>
+                Driver ID: <?= e($assignment['driver_id']) ?> <?= $assignment['driver_name'] ? '- ' . e($assignment['driver_name']) : '' ?><br>
                 Assigned: <?= date('M d, Y H:i', strtotime($assignment['assigned_at'])) ?>
             </div>
             <form method="POST" onsubmit="return confirm('Unassign this driver?');">

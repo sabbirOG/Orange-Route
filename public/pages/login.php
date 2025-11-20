@@ -9,21 +9,31 @@ $error = OrangeRoute\Session::flash('error');
 $success = OrangeRoute\Session::flash('success');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $studentId = trim($_POST['student_id'] ?? '');
+    $userId = trim($_POST['user_id'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    if (empty($studentId) || empty($password)) {
+    if (empty($userId) || empty($password)) {
         $error = 'Please fill all fields';
-    } elseif (!preg_match('/^[0-9]{9,10}$/', $studentId)) {
-        $error = 'Invalid student ID format. Must be 9 or 10 digits.';
+    } elseif (!preg_match('/^[0-9]{3,10}$/', $userId)) {
+        $error = 'Invalid ID format. Must be 3-10 digits.';
     } else {
-        // Convert student ID to email
-        $email = $studentId . '@student.orangeroute.local';
+        // Determine user type by ID length
+        $idLength = strlen($userId);
+        if ($idLength >= 3 && $idLength <= 4) {
+            // Admin ID format (3-4 digits)
+            $email = 'admin' . $userId . '@orangeroute.local';
+        } elseif ($idLength === 5) {
+            // Driver ID format (exactly 5 digits)
+            $email = 'driver' . $userId . '@orangeroute.local';
+        } else {
+            // Student ID format (9-10 digits)
+            $email = $userId . '@student.orangeroute.local';
+        }
         
         if (OrangeRoute\Auth::login($email, $password)) {
             redirect('pages/map.php');
         } else {
-            $error = 'Incorrect Student ID or password. Please check your credentials and try again.';
+            $error = 'Incorrect ID or password. Please check your credentials and try again.';
         }
     }
 }
@@ -74,9 +84,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <form method="POST">
                     <div class="form-group">
-                        <label>Student ID</label>
-                        <input type="text" name="student_id" required placeholder="123456789" pattern="[0-9]{9,10}" maxlength="10" autocomplete="off" value="<?= e($_POST['student_id'] ?? '') ?>">
-                        <small class="text-muted">Enter your 9 or 10 digit student ID</small>
+                        <label>User ID</label>
+                        <input type="text" name="user_id" required placeholder="123 or 12345 or 123456789" pattern="[0-9]{3,10}" maxlength="10" autocomplete="off" value="<?= e($_POST['user_id'] ?? '') ?>">
+                        <small class="text-muted">Admin: 3-4 digits | Drivers: 5 digits | Students: 9-10 digits</small>
                     </div>
                     
                     <div class="form-group">
