@@ -2,11 +2,10 @@
 -- Clean, working version
 
 -- Drop all tables in correct order (child tables first)
-DROP TABLE IF EXISTS shuttle_locations;
-DROP TABLE IF EXISTS shuttle_assignments;
+DROP TABLE IF EXISTS route_locations;
+DROP TABLE IF EXISTS route_assignments;
 DROP TABLE IF EXISTS route_stops;
 DROP TABLE IF EXISTS routes;
-DROP TABLE IF EXISTS shuttles;
 DROP TABLE IF EXISTS password_history;
 DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS users;
@@ -62,21 +61,13 @@ CREATE TABLE password_history (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Shuttles table
-CREATE TABLE shuttles (
-    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    shuttle_name VARCHAR(100) NOT NULL,
-    registration_number VARCHAR(50) NOT NULL UNIQUE,
-    capacity INT NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Routes table
 CREATE TABLE routes (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     route_name VARCHAR(100) NOT NULL,
+    from_location VARCHAR(100),
+    to_location VARCHAR(100),
+    distance_type ENUM('long', 'short') DEFAULT 'short',
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -97,34 +88,34 @@ CREATE TABLE route_stops (
     FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Shuttle assignments table
-CREATE TABLE shuttle_assignments (
+-- Route assignments table
+CREATE TABLE route_assignments (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    shuttle_id INT UNSIGNED NOT NULL,
     driver_id INT UNSIGNED NOT NULL,
     route_id INT UNSIGNED NOT NULL,
     is_current BOOLEAN DEFAULT TRUE,
     assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     ended_at DATETIME,
-    INDEX idx_shuttle (shuttle_id),
     INDEX idx_driver (driver_id),
     INDEX idx_route (route_id),
-    FOREIGN KEY (shuttle_id) REFERENCES shuttles(id) ON DELETE CASCADE,
     FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Shuttle locations table
-CREATE TABLE shuttle_locations (
+-- Route locations table
+CREATE TABLE route_locations (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    shuttle_id INT UNSIGNED NOT NULL,
+    route_id INT UNSIGNED NOT NULL,
+    driver_id INT UNSIGNED NOT NULL,
     latitude DECIMAL(10, 8) NOT NULL,
     longitude DECIMAL(11, 8) NOT NULL,
     speed DECIMAL(5, 2),
     heading DECIMAL(5, 2),
     accuracy DECIMAL(6, 2),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_shuttle (shuttle_id),
+    INDEX idx_route (route_id),
+    INDEX idx_driver (driver_id),
     INDEX idx_created (created_at),
-    FOREIGN KEY (shuttle_id) REFERENCES shuttles(id) ON DELETE CASCADE
+    FOREIGN KEY (route_id) REFERENCES routes(id) ON DELETE CASCADE,
+    FOREIGN KEY (driver_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

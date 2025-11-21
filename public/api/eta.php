@@ -3,56 +3,54 @@ require_once __DIR__ . '/../../../config/bootstrap.php';
 
 header('Content-Type: application/json');
 
-$shuttleId = $_GET['shuttle_id'] ?? 0;
+$routeId = $_GET['route_id'] ?? 0;
 $userLat = (float)($_GET['lat'] ?? 0);
 $userLng = (float)($_GET['lng'] ?? 0);
 
-if (!$shuttleId || !$userLat || !$userLng) {
+if (!$routeId || !$userLat || !$userLng) {
     http_response_code(400);
     echo json_encode(['error' => 'Missing parameters']);
     exit;
 }
 
-// Get shuttle's latest location and current route (if assigned)
-$shuttle = OrangeRoute\Database::fetch(
-    "SELECT s.shuttle_name, sa.route_id, sl.latitude, sl.longitude,
-            ST_Distance_Sphere(POINT(?, ?), POINT(sl.longitude, sl.latitude)) / 1000 AS distance_km
-     FROM shuttles s
-     JOIN shuttle_locations sl ON s.id = sl.shuttle_id
-     LEFT JOIN shuttle_assignments sa ON sa.shuttle_id = s.id AND sa.is_current = 1
-     WHERE s.id = ? AND sl.id = (
-         SELECT id FROM shuttle_locations
-         WHERE shuttle_id = s.id
-         ORDER BY created_at DESC LIMIT 1
+// Get route's latest location from active driver
+$route = OrangeRoute\Database::fetch(
+    "SELECT r.route_name, r.distance_type as category, rl.latitude, rl.longitude,
+            ST_Distance_Sphere(POINT(?, ?), POINT(rl.longitude, rl.latitude)) / 1000 AS distance_km
+     FROM routes r
+     JOIN route_locations rl ON r.id = rl.route_id
+     JOIN route_assignments ra ON ra.route_id = r.id AND ra.is_current = 1
+     WHERE r.id = ? AND rl.id = (
+         SELECT id FROM route_locations
+         WHERE route_id = r.id
+         ORDER BY updated_at DESC LIMIT 1
      )",
-    [$userLng, $userLat, $shuttleId]
+    [$userLng, $userLat, $routeId]
 );
 
-if (!$shuttle) {
-    echo json_encode(['error' => 'Shuttle not found']);
+if (!$route) {
+    echo json_encode(['error' => 'Route not found or not active']);
     exit;
 }
 
 // Calculate ETA (assume average speed of 30 km/h in city traffic)
 $avgSpeed = 30; // km/h
-$distanceKm = (float)$shuttle['distance_km'];
+$distanceKm = (float)$route['distance_km'];
 $etaMinutes = (int)round(($distanceKm / $avgSpeed) * 60);
 
 // Get next stop if on route
-$nextStop = null;
-if (!empty($shuttle['route_id'])) {
-    $nextStop = OrangeRoute\Database::fetch(
-        "SELECT stop_name, estimated_time
-         FROM route_stops
-         WHERE route_id = ?
-         ORDER BY stop_order ASC
-         LIMIT 1",
-        [$shuttle['route_id']]
-    );
-}
+$nextStop = OrangeRoute\Database::fetch(
+    "SELECT stop_name, estimated_time
+     FROM route_stops
+     WHERE route_id = ?
+     ORDER BY stop_order ASC
+     LIMIT 1",
+    [$routeId]
+);
 
 echo json_encode([
-    'shuttle_name' => $shuttle['shuttle_name'],
+    'route_name' => $route['route_name'],
+    'category' => $route['category'],
     'distance_km' => round($distanceKm, 2),
     'distance_text' => $distanceKm < 1
         ? round($distanceKm * 1000) . ' meters'

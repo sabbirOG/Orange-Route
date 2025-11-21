@@ -24,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Assign new driver to selected route
             OrangeRoute\Database::query(
-                "INSERT INTO route_assignments (route_id, driver_id, is_current) VALUES (?, ?, 1)",
-                [$routeId, $driverId]
+                "INSERT INTO route_assignments (driver_id, route_id, is_current) VALUES (?, ?, 1)",
+                [$driverId, $routeId]
             );
             $success = 'Driver assigned successfully';
         } catch (Exception $e) {
@@ -42,10 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get current assignments
 $assignments = OrangeRoute\Database::fetchAll("
-    SELECT ra.id, ra.assigned_at, r.route_name, 
-           u.email as driver_email, u.username as driver_name,
-           REPLACE(u.email, 'driver', '') as driver_id_raw,
-           REPLACE(REPLACE(u.email, 'driver', ''), '@orangeroute.local', '') as driver_id
+    SELECT ra.id, ra.assigned_at, r.route_name, r.distance_type as category,
+           u.email as driver_email, u.username as driver_name, u.student_id as driver_id
     FROM route_assignments ra
     JOIN routes r ON ra.route_id = r.id
     JOIN users u ON ra.driver_id = u.id
@@ -63,7 +61,7 @@ $drivers = OrangeRoute\Database::fetchAll("
 
 // Get available routes
 $routes = OrangeRoute\Database::fetchAll("
-    SELECT id, route_name FROM routes WHERE is_active = 1 ORDER BY route_name
+    SELECT id, route_name, distance_type as category FROM routes WHERE is_active = 1 ORDER BY distance_type, route_name
 ");
 ?>
 <!DOCTYPE html>
@@ -109,11 +107,23 @@ $routes = OrangeRoute\Database::fetchAll("
                     <label>Select Route</label>
                     <select name="route_id" required>
                         <option value="">Choose route...</option>
-                        <?php foreach ($routes as $route): ?>
+                        <?php 
+                        $currentCategory = null;
+                        foreach ($routes as $route): 
+                            if ($currentCategory !== $route['category']):
+                                if ($currentCategory !== null) echo '</optgroup>';
+                                $categoryLabel = $route['category'] === 'long' ? 'Long Route' : 'Short Route';
+                                echo '<optgroup label="' . $categoryLabel . '">';
+                                $currentCategory = $route['category'];
+                            endif;
+                        ?>
                         <option value="<?= $route['id'] ?>">
                             <?= e($route['route_name']) ?>
                         </option>
-                        <?php endforeach; ?>
+                        <?php 
+                        endforeach; 
+                        if ($currentCategory !== null) echo '</optgroup>';
+                        ?>
                     </select>
                 </div>
                 <div class="form-group">
@@ -121,11 +131,9 @@ $routes = OrangeRoute\Database::fetchAll("
                     <select name="driver_id" required>
                         <option value="">Choose driver...</option>
                         <?php foreach ($drivers as $driver): ?>
-                        <?php 
-                            $driverId = str_replace(['driver', '@orangeroute.local'], '', $driver['email']);
-                        ?>
                         <option value="<?= $driver['id'] ?>">
-                            ID: <?= e($driverId) ?> <?= $driver['username'] ? '- ' . e($driver['username']) : '' ?>
+                            <?= $driver['username'] ? e($driver['username']) : 'Driver' ?>
+                            <?= $driver['email'] ? ' (' . e($driver['email']) . ')' : '' ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -144,10 +152,13 @@ $routes = OrangeRoute\Database::fetchAll("
         <div class="assignment-card">
             <div style="margin-bottom: 12px;">
                 <strong style="font-size: 16px;"><?= e($assignment['route_name']) ?></strong>
-                <span class="badge badge-success">Active</span>
+                <span class="badge badge-<?= $assignment['category'] === 'long' ? 'primary' : 'success' ?>">
+                    <?= $assignment['category'] === 'long' ? 'Long Route' : 'Short Route' ?>
+                </span>
             </div>
             <div class="text-muted" style="font-size: 14px; margin-bottom: 12px;">
-                Driver ID: <?= e($assignment['driver_id']) ?> <?= $assignment['driver_name'] ? '- ' . e($assignment['driver_name']) : '' ?><br>
+                Driver: <?= $assignment['driver_name'] ? e($assignment['driver_name']) : 'Driver' ?>
+                <?= $assignment['driver_id'] ? ' (ID: ' . e($assignment['driver_id']) . ')' : '' ?><br>
                 Assigned: <?= date('M d, Y H:i', strtotime($assignment['assigned_at'])) ?>
             </div>
             <form method="POST" onsubmit="return confirm('Unassign this driver?');">

@@ -19,22 +19,22 @@ if (!$lat || !$lng) {
 
 $userId = OrangeRoute\Session::userId();
 
-// Get driver's shuttle assignment
+// Get driver's route assignment
 $assignment = OrangeRoute\Database::fetch(
-    "SELECT shuttle_id FROM shuttle_assignments WHERE driver_id = ? AND is_current = 1",
+    "SELECT route_id FROM route_assignments WHERE driver_id = ? AND is_current = 1",
     [$userId]
 );
 
 if (!$assignment) {
-    json_response(['success' => false, 'error' => 'No shuttle assigned'], 400);
+    json_response(['success' => false, 'error' => 'No route assigned'], 400);
 }
 
 // Insert location
 try {
     OrangeRoute\Database::query(
-        "INSERT INTO shuttle_locations (shuttle_id, latitude, longitude, created_at) 
-         VALUES (?, ?, ?, NOW())",
-        [$assignment['shuttle_id'], $lat, $lng]
+        "INSERT INTO route_locations (route_id, latitude, longitude) 
+         VALUES (?, ?, ?)",
+        [$assignment['route_id'], $lat, $lng]
     );
     
     json_response(['success' => true, 'message' => 'Location updated']);

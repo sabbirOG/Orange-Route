@@ -6,34 +6,34 @@ header('Content-Type: application/json');
 requireAuth();
 
 try {
-    // Get latest location for each shuttle
+    // Get latest location for each route
     $locations = OrangeRoute\Database::fetchAll("
         SELECT 
-            sl.shuttle_id,
-            sl.latitude,
-            sl.longitude,
-            sl.created_at,
-            s.shuttle_name,
-            s.registration_number,
-            s.route_description
-        FROM shuttle_locations sl
-        INNER JOIN shuttles s ON s.id = sl.shuttle_id
-        WHERE sl.id IN (
-            SELECT MAX(id) FROM shuttle_locations 
-            WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-            GROUP BY shuttle_id
+            rl.route_id,
+            rl.latitude,
+            rl.longitude,
+            rl.updated_at as created_at,
+            r.route_name,
+            r.distance_type as category,
+            r.description
+        FROM route_locations rl
+        INNER JOIN routes r ON r.id = rl.route_id
+        WHERE rl.id IN (
+            SELECT MAX(id) FROM route_locations 
+            WHERE updated_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+            GROUP BY route_id
         )
-        AND s.is_active = 1
+        AND r.is_active = 1
     ");
     
     json_response([
         'success' => true,
         'data' => array_map(function($loc) {
             return [
-                'id' => $loc['shuttle_id'],
-                'shuttle_name' => $loc['shuttle_name'],
-                'registration_number' => $loc['registration_number'],
-                'route_description' => $loc['route_description'],
+                'id' => $loc['route_id'],
+                'route_name' => $loc['route_name'],
+                'category' => $loc['category'],
+                'description' => $loc['description'],
                 'latitude' => (float) $loc['latitude'],
                 'longitude' => (float) $loc['longitude'],
                 'updated_at' => $loc['created_at']

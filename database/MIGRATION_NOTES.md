@@ -1,5 +1,51 @@
 # Database Migration Notes
 
+## Category-Based Route System (Latest - Nov 2025)
+
+The system has been updated to use a **category-based route system** instead of shuttles. Routes are now categorized as either **Long Route** or **Short Route**.
+
+### For Existing Databases
+
+Run the migration file: `migrate_to_categories.sql`
+
+```bash
+mysql -u your_user -p your_database < database/migrate_to_categories.sql
+```
+
+### Key Changes
+
+**Removed:**
+- `shuttles` table (no longer needed)
+- `shuttle_assignments` table → replaced with `route_assignments`
+- `shuttle_locations` table → replaced with `route_locations`
+- Shuttle name, registration number, capacity fields
+
+**Added:**
+- `category` field to `routes` table (ENUM: 'long', 'short')
+- `route_assignments` table (driver_id + route_id only)
+- `route_locations` table (tracks driver location on routes)
+
+**New Route Categories:**
+1. **Long Route** - For longer distance shuttle services
+2. **Short Route** - For shorter distance shuttle services
+
+### Admin Workflow
+
+1. Create routes and assign them a category (long or short)
+2. Assign drivers directly to routes (no shuttle selection needed)
+3. Drivers see their assigned route with category badge
+4. Students see routes grouped by category with live tracking
+
+### Assignment Flow
+
+**Before (Shuttle-based):**
+- Admin assigns: Driver + Shuttle + Route
+
+**After (Category-based):**
+- Admin assigns: Driver + Route (category is part of route)
+
+---
+
 ## Student ID Authentication System
 
 The system has been updated to use Student ID-based authentication instead of email verification.

@@ -97,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             <?php endif; ?>
         </div>
         
+        <?php if ($user['role'] !== 'driver'): ?>
         <div class="card">
             <h3>Personal Information</h3>
             
@@ -116,6 +117,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 EDIT
             </button>
         </div>
+        <?php else: ?>
+        <div class="card">
+            <h3>Personal Information</h3>
+            
+            <div style="margin-bottom: 16px;">
+                <p><strong>Username:</strong> <?= e($user['username']) ?></p>
+            </div>
+        </div>
+        <?php endif; ?>
         
         <div class="card">
             <h3>Account Settings</h3>

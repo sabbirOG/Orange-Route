@@ -10,33 +10,33 @@ $notifications = [];
 // For drivers: recent assignments
 if ($user['role'] === 'driver') {
     $assignments = OrangeRoute\Database::fetchAll(
-        "SELECT sa.assigned_at, s.shuttle_name, r.route_name
-         FROM shuttle_assignments sa
-         JOIN shuttles s ON sa.shuttle_id = s.id
-         JOIN routes r ON sa.route_id = r.id
-         WHERE sa.driver_id = ? AND sa.is_current = 1
-         ORDER BY sa.assigned_at DESC LIMIT 5",
+        "SELECT ra.assigned_at, r.route_name, r.distance_type as category
+         FROM route_assignments ra
+         JOIN routes r ON ra.route_id = r.id
+         WHERE ra.driver_id = ? AND ra.is_current = 1
+         ORDER BY ra.assigned_at DESC LIMIT 5",
         [$user['id']]
     );
     foreach ($assignments as $a) {
+        $categoryText = $a['category'] === 'long' ? 'Long Route' : 'Short Route';
         $notifications[] = [
             'type' => 'assignment',
-            'message' => "You were assigned to {$a['shuttle_name']} on {$a['route_name']}",
+            'message' => "You were assigned to {$a['route_name']} ({$categoryText})",
             'time' => $a['assigned_at'],
             'icon' => 'shuttle'
         ];
     }
 }
 
-// For students: active shuttles count
+// For students: active routes count
 if ($user['role'] === 'student') {
     $activeCount = OrangeRoute\Database::fetchValue(
-        "SELECT COUNT(*) FROM shuttles WHERE is_active = 1"
+        "SELECT COUNT(*) FROM routes WHERE is_active = 1"
     );
     if ($activeCount > 0) {
         $notifications[] = [
             'type' => 'info',
-            'message' => "{$activeCount} shuttle" . ($activeCount > 1 ? 's are' : ' is') . " currently active",
+            'message' => "{$activeCount} route" . ($activeCount > 1 ? 's are' : ' is') . " currently active",
             'time' => date('Y-m-d H:i:s'),
             'icon' => 'info'
         ];

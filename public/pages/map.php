@@ -9,12 +9,12 @@ $role = $user['role'] ?? 'student';
 if ($role === 'admin') {
     $stats['total_users'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM users") ?? 0;
     $stats['total_drivers'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM users WHERE role = 'driver'") ?? 0;
-    $stats['active_shuttles'] = OrangeRoute\Database::fetchValue("
-        SELECT COUNT(DISTINCT shuttle_id) 
-        FROM shuttle_locations 
-        WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+    $stats['active_routes'] = OrangeRoute\Database::fetchValue("
+        SELECT COUNT(DISTINCT route_id) 
+        FROM route_locations 
+        WHERE updated_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
     ") ?? 0;
-    $stats['active_assignments'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM shuttle_assignments WHERE is_current = 1") ?? 0;
+    $stats['active_assignments'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM route_assignments WHERE is_current = 1") ?? 0;
     
     $recent_activity = OrangeRoute\Database::fetchAll("
         SELECT u.email, u.last_login_at, u.role
@@ -30,32 +30,28 @@ elseif ($role === 'driver') {
     // Get driver's current assignment
     $current_assignment = OrangeRoute\Database::fetch("
         SELECT 
-            sa.id,
-            sa.shuttle_id,
-            s.shuttle_name,
-            s.registration_number,
-            s.capacity,
+            ra.id,
             r.id as route_id,
             r.route_name,
+            r.distance_type as category,
             r.description as route_description,
             r.is_active,
-            sa.assigned_at
-        FROM shuttle_assignments sa
-        JOIN shuttles s ON sa.shuttle_id = s.id
-        JOIN routes r ON sa.route_id = r.id
-        WHERE sa.driver_id = ? AND sa.is_current = 1
+            ra.assigned_at
+        FROM route_assignments ra
+        JOIN routes r ON ra.route_id = r.id
+        WHERE ra.driver_id = ? AND ra.is_current = 1
         LIMIT 1
     ", [$user['id']]);
     
     if ($current_assignment) {
         // Get last location update
         $last_location = OrangeRoute\Database::fetch("
-            SELECT latitude, longitude, created_at, speed
-            FROM shuttle_locations
-            WHERE shuttle_id = ?
-            ORDER BY created_at DESC
+            SELECT latitude, longitude, updated_at as created_at, 0 as speed
+            FROM route_locations
+            WHERE route_id = ?
+            ORDER BY updated_at DESC
             LIMIT 1
-        ", [$current_assignment['shuttle_id']]);
+        ", [$current_assignment['route_id']]);
         
         // Get route stops
         $route_stops = OrangeRoute\Database::fetchAll("
@@ -68,51 +64,43 @@ elseif ($role === 'driver') {
         // Count today's updates
         $updates_today = OrangeRoute\Database::fetchValue("
             SELECT COUNT(*)
-            FROM shuttle_locations
-            WHERE shuttle_id = ? AND DATE(created_at) = CURDATE()
-        ", [$current_assignment['shuttle_id']]) ?? 0;
+            FROM route_locations
+            WHERE route_id = ? AND DATE(updated_at) = CURDATE()
+        ", [$current_assignment['route_id']]) ?? 0;
     }
 }
 
 // ==================== STUDENT DASHBOARD ====================
 else {
-    // Get all active shuttles with real-time location (only show routes that are active)
-    $active_shuttles = OrangeRoute\Database::fetchAll("
+    // Get all active routes with real-time location
+    $active_routes = OrangeRoute\Database::fetchAll("
         SELECT 
-            s.id,
-            s.shuttle_name,
-            s.registration_number,
-            s.capacity,
+            r.id,
             r.route_name,
-            r.is_active as route_active,
-            sl.latitude,
-            sl.longitude,
-            sl.created_at as last_seen,
-            sl.speed,
-            TIMESTAMPDIFF(MINUTE, sl.created_at, NOW()) as minutes_ago
-        FROM shuttles s
-        LEFT JOIN shuttle_assignments sa ON s.id = sa.shuttle_id AND sa.is_current = 1
-        LEFT JOIN routes r ON sa.route_id = r.id
+            r.distance_type as category,
+            r.description,
+            r.is_active,
+            u.username as driver_name,
+            rl.latitude,
+            rl.longitude,
+            rl.updated_at as last_seen,
+            0 as speed,
+            TIMESTAMPDIFF(MINUTE, rl.updated_at, NOW()) as minutes_ago
+        FROM routes r
+        LEFT JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1
+        LEFT JOIN users u ON ra.driver_id = u.id
         LEFT JOIN (
-            SELECT shuttle_id, latitude, longitude, created_at, speed,
-            ROW_NUMBER() OVER (PARTITION BY shuttle_id ORDER BY created_at DESC) as rn
-            FROM shuttle_locations
-            WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-        ) sl ON s.id = sl.shuttle_id AND sl.rn = 1
-        WHERE s.is_active = 1 AND r.is_active = 1
-        ORDER BY sl.created_at DESC
+            SELECT route_id, latitude, longitude, updated_at,
+            ROW_NUMBER() OVER (PARTITION BY route_id ORDER BY updated_at DESC) as rn
+            FROM route_locations
+            WHERE updated_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+        ) rl ON r.id = rl.route_id AND rl.rn = 1
+        WHERE r.is_active = 1
+        ORDER BY rl.updated_at DESC
     ");
     
-    // Get available routes
-    $available_routes = OrangeRoute\Database::fetchAll("
-        SELECT id, route_name, description
-        FROM routes
-        WHERE is_active = 1
-        ORDER BY route_name ASC
-    ");
-    
-    $stats['active_shuttles'] = count(array_filter($active_shuttles, fn($s) => $s['last_seen'] && $s['minutes_ago'] < 5));
-    $stats['total_routes'] = count($available_routes);
+    $stats['active_routes_now'] = count(array_filter($active_routes, fn($r) => $r['last_seen'] && $r['minutes_ago'] < 5));
+    $stats['total_routes'] = count($active_routes);
 }
 ?>
 <!DOCTYPE html>
@@ -207,12 +195,12 @@ else {
                 <div class="stat-card">
                     <div class="stat-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                            <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
+                            <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                            <circle cx="12" cy="11" r="2"></circle>
                         </svg>
                     </div>
-                    <div class="stat-value"><?= $stats['active_shuttles'] ?></div>
-                    <div class="stat-label">Active Now</div>
+                    <div class="stat-value"><?= $stats['active_routes'] ?></div>
+                    <div class="stat-label">Active Routes</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">
@@ -290,14 +278,18 @@ else {
                 <div class="assignment-card">
                     <h3>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                            <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
+                            <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                            <circle cx="12" cy="11" r="2"></circle>
                         </svg>
                         Current Assignment
                     </h3>
-                    <p><strong><?= e($current_assignment['shuttle_name']) ?></strong> • <?= e($current_assignment['registration_number']) ?></p>
-                    <p>Capacity: <?= e($current_assignment['capacity']) ?> passengers</p>
-                    <p>Route: <?= e($current_assignment['route_name']) ?></p>
+                    <p><strong><?= e($current_assignment['route_name']) ?></strong></p>
+                    <p>
+                        <span class="badge badge-<?= $current_assignment['category'] === 'long' ? 'primary' : 'success' ?>">
+                            <?= $current_assignment['category'] === 'long' ? 'Long Route' : 'Short Route' ?>
+                        </span>
+                    </p>
+                    <p><?= e($current_assignment['route_description']) ?></p>
                     <p style="font-size: 12px; opacity: 0.8; margin-top: 8px;">Assigned: <?= date('M d, Y', strtotime($current_assignment['assigned_at'])) ?></p>
                 </div>
 
@@ -365,7 +357,7 @@ else {
                             <line x1="12" y1="16" x2="12.01" y2="16"></line>
                         </svg>
                         <h3>No Assignment</h3>
-                        <p class="text-muted">You don't have an active shuttle assignment. Contact your admin.</p>
+                        <p class="text-muted">You don't have an active route assignment. Contact your admin.</p>
                     </div>
                 </div>
             <?php endif; ?>
@@ -376,11 +368,11 @@ else {
                 <div class="stat-card">
                     <div class="stat-icon">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                            <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
+                            <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                            <circle cx="12" cy="11" r="2"></circle>
                         </svg>
                     </div>
-                    <div class="stat-value"><?= $stats['active_shuttles'] ?></div>
+                    <div class="stat-value"><?= $stats['active_routes_now'] ?></div>
                     <div class="stat-label">Active Now</div>
                 </div>
                 <div class="stat-card">
@@ -396,34 +388,38 @@ else {
             </div>
 
             <h3 class="section-title">Live Routes</h3>
-            <?php if (count($active_shuttles) > 0): ?>
-                <?php foreach ($active_shuttles as $shuttle): ?>
-                    <?php $is_active = $shuttle['last_seen'] && $shuttle['minutes_ago'] < 5; ?>
+            <?php if (count($active_routes) > 0): ?>
+                <?php foreach ($active_routes as $route): ?>
+                    <?php $is_active = $route['last_seen'] && $route['minutes_ago'] < 5; ?>
                     <div class="shuttle-item">
                         <div class="shuttle-avatar">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                                <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
+                                <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                                <circle cx="12" cy="11" r="2"></circle>
                             </svg>
                         </div>
                         <div class="shuttle-info">
-                            <div class="shuttle-name"><?= e($shuttle['shuttle_name']) ?></div>
+                            <div class="shuttle-name"><?= e($route['route_name']) ?></div>
                             <div class="shuttle-meta">
                                 <span class="status-dot <?= $is_active ? 'status-active' : 'status-inactive' ?>"></span>
                                 <?php if ($is_active): ?>
-                                    Live • <?= $shuttle['route_name'] ? e($shuttle['route_name']) : 'No route' ?>
+                                    Live • <?= $route['driver_name'] ? e($route['driver_name']) : 'No driver' ?>
                                 <?php else: ?>
                                     Offline
                                 <?php endif; ?>
+                                 • 
+                                <span class="badge badge-<?= $route['category'] === 'long' ? 'primary' : 'success' ?>" style="font-size: 10px; padding: 2px 6px;">
+                                    <?= $route['category'] === 'long' ? 'Long' : 'Short' ?>
+                                </span>
                             </div>
-                            <?php if ($shuttle['last_seen']): ?>
+                            <?php if ($route['last_seen']): ?>
                             <div class="shuttle-meta" style="font-size: 11px; margin-top: 2px;">
-                                <?php if ($shuttle['minutes_ago'] < 1): ?>
+                                <?php if ($route['minutes_ago'] < 1): ?>
                                     Just now
-                                <?php elseif ($shuttle['minutes_ago'] < 60): ?>
-                                    <?= $shuttle['minutes_ago'] ?> min ago
+                                <?php elseif ($route['minutes_ago'] < 60): ?>
+                                    <?= $route['minutes_ago'] ?> min ago
                                 <?php else: ?>
-                                    <?= date('g:i A', strtotime($shuttle['last_seen'])) ?>
+                                    <?= date('g:i A', strtotime($route['last_seen'])) ?>
                                 <?php endif; ?>
                             </div>
                             <?php endif; ?>
@@ -433,17 +429,17 @@ else {
             <?php else: ?>
                 <div class="card" style="text-align: center; padding: 30px 20px;">
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" stroke-width="2" style="margin: 0 auto 16px;">
-                        <rect x="5" y="11" width="14" height="10" rx="2"></rect>
-                        <path d="M5 11V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"></path>
+                        <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                        <circle cx="12" cy="11" r="2"></circle>
                     </svg>
                     <h3 style="margin-bottom: 8px;">No Active Routes</h3>
                     <p class="text-muted">All routes are currently inactive. Check back later!</p>
                 </div>
             <?php endif; ?>
 
-            <?php if (count($available_routes) > 0): ?>
-            <h3 class="section-title" style="margin-top: 20px;">Available Routes</h3>
-            <?php foreach ($available_routes as $route): ?>
+            <?php if (count($active_routes) > 0): ?>
+            <h3 class="section-title" style="margin-top: 20px;">All Routes</h3>
+            <?php foreach ($active_routes as $route): ?>
             <div class="route-card">
                 <h4>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -451,6 +447,9 @@ else {
                         <circle cx="12" cy="11" r="2"></circle>
                     </svg>
                     <?= e($route['route_name']) ?>
+                    <span class="badge badge-<?= $route['category'] === 'long' ? 'primary' : 'success' ?>" style="margin-left: 8px; font-size: 11px;">
+                        <?= $route['category'] === 'long' ? 'Long Route' : 'Short Route' ?>
+                    </span>
                 </h4>
                 <?php if ($route['description']): ?>
                 <p><?= e($route['description']) ?></p>

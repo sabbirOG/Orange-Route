@@ -4,9 +4,10 @@ requireAuth('driver');
 
 $user = OrangeRoute\Auth::user();
 $assignment = OrangeRoute\Database::fetch(
-    "SELECT s.* FROM shuttles s 
-     INNER JOIN shuttle_assignments sa ON sa.shuttle_id = s.id 
-     WHERE sa.driver_id = ? AND sa.is_current = 1",
+    "SELECT ra.*, r.route_name, r.distance_type as category, r.description, r.id as route_id
+     FROM route_assignments ra 
+     INNER JOIN routes r ON ra.route_id = r.id
+     WHERE ra.driver_id = ? AND ra.is_current = 1",
     [$user['id']]
 );
 ?>
@@ -26,9 +27,11 @@ $assignment = OrangeRoute\Database::fetch(
     <div class="container">
         <?php if ($assignment): ?>
             <div class="card">
-                <h3><?= e($assignment['shuttle_name']) ?></h3>
-                <p class="text-muted"><?= e($assignment['registration_number']) ?></p>
-                <div class="badge badge-success">Assigned</div>
+                <h3><?= e($assignment['route_name']) ?></h3>
+                <p class="text-muted"><?= e($assignment['description']) ?></p>
+                <div class="badge badge-<?= $assignment['category'] === 'long' ? 'primary' : 'success' ?>">
+                    <?= $assignment['category'] === 'long' ? 'Long Route' : 'Short Route' ?>
+                </div>
             </div>
             
             <div class="card">
@@ -37,7 +40,7 @@ $assignment = OrangeRoute\Database::fetch(
                 <p class="text-muted" id="last-update">No updates yet</p>
             </div>
         <?php else: ?>
-            <div class="alert alert-error">No shuttle assigned. Contact admin.</div>
+            <div class="alert alert-error">No route assigned. Contact admin.</div>
         <?php endif; ?>
     </div>
     

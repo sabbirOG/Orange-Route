@@ -3,6 +3,12 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 requireAuth();
 
 $user = OrangeRoute\Auth::user();
+
+// Redirect drivers to profile page
+if ($user['role'] === 'driver') {
+    header('Location: profile.php');
+    exit;
+}
 $error = null;
 $success = null;
 
