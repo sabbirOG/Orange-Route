@@ -10,10 +10,10 @@ if ($role === 'admin') {
     $stats['total_users'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM users") ?? 0;
     $stats['total_drivers'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM users WHERE role = 'driver'") ?? 0;
     $stats['active_routes'] = OrangeRoute\Database::fetchValue("
-        SELECT COUNT(DISTINCT route_id) 
-        FROM route_locations 
-        WHERE updated_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-    ") ?? 0;
+            SELECT COUNT(DISTINCT route_id) 
+            FROM route_locations 
+            WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+        ") ?? 0;
     $stats['active_assignments'] = OrangeRoute\Database::fetchValue("SELECT COUNT(*) FROM route_assignments WHERE is_current = 1") ?? 0;
     
     $recent_activity = OrangeRoute\Database::fetchAll("
@@ -46,12 +46,12 @@ elseif ($role === 'driver') {
     if ($current_assignment) {
         // Get last location update
         $last_location = OrangeRoute\Database::fetch("
-            SELECT latitude, longitude, updated_at as created_at, 0 as speed
-            FROM route_locations
-            WHERE route_id = ?
-            ORDER BY updated_at DESC
-            LIMIT 1
-        ", [$current_assignment['route_id']]);
+                SELECT latitude, longitude, created_at, speed
+                FROM route_locations
+                WHERE route_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+            ", [$current_assignment['route_id']]);
         
         // Get route stops
         $route_stops = OrangeRoute\Database::fetchAll("
@@ -63,10 +63,10 @@ elseif ($role === 'driver') {
         
         // Count today's updates
         $updates_today = OrangeRoute\Database::fetchValue("
-            SELECT COUNT(*)
-            FROM route_locations
-            WHERE route_id = ? AND DATE(updated_at) = CURDATE()
-        ", [$current_assignment['route_id']]) ?? 0;
+                SELECT COUNT(*)
+                FROM route_locations
+                WHERE route_id = ? AND DATE(created_at) = CURDATE()
+            ", [$current_assignment['route_id']]) ?? 0;
     }
 }
 
@@ -83,20 +83,20 @@ else {
             u.username as driver_name,
             rl.latitude,
             rl.longitude,
-            rl.updated_at as last_seen,
-            0 as speed,
-            TIMESTAMPDIFF(MINUTE, rl.updated_at, NOW()) as minutes_ago
+            rl.created_at as last_seen,
+            rl.speed,
+            TIMESTAMPDIFF(MINUTE, rl.created_at, NOW()) as minutes_ago
         FROM routes r
         LEFT JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1
         LEFT JOIN users u ON ra.driver_id = u.id
         LEFT JOIN (
-            SELECT route_id, latitude, longitude, updated_at,
-            ROW_NUMBER() OVER (PARTITION BY route_id ORDER BY updated_at DESC) as rn
+            SELECT route_id, latitude, longitude, created_at, speed, heading, accuracy,
+            ROW_NUMBER() OVER (PARTITION BY route_id ORDER BY created_at DESC) as rn
             FROM route_locations
-            WHERE updated_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
         ) rl ON r.id = rl.route_id AND rl.rn = 1
         WHERE r.is_active = 1
-        ORDER BY rl.updated_at DESC
+            ORDER BY rl.created_at DESC
     ");
     
     $stats['active_routes_now'] = count(array_filter($active_routes, fn($r) => $r['last_seen'] && $r['minutes_ago'] < 5));
@@ -390,8 +390,13 @@ else {
             <h3 class="section-title">Live Routes</h3>
             <?php if (count($active_routes) > 0): ?>
                 <?php foreach ($active_routes as $route): ?>
-                    <?php $is_active = $route['last_seen'] && $route['minutes_ago'] < 5; ?>
-                    <div class="shuttle-item">
+                    <?php 
+                        $is_active = $route['last_seen'] && $route['minutes_ago'] < 5;
+                        $maps_url = ($route['latitude'] && $route['longitude']) 
+                            ? 'https://www.google.com/maps?q=' . $route['latitude'] . ',' . $route['longitude']
+                            : '#';
+                    ?>
+                    <a href="<?= $maps_url ?>" target="_blank" class="shuttle-item" style="text-decoration: none; color: inherit; display: flex;">
                         <div class="shuttle-avatar">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
@@ -424,7 +429,7 @@ else {
                             </div>
                             <?php endif; ?>
                         </div>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="card" style="text-align: center; padding: 30px 20px;">
@@ -462,8 +467,16 @@ else {
     
     <?php $active = 'dashboard'; include __DIR__ . '/_partials/bottom_nav.php'; ?>
     
+    <?php if ($role === 'student'): ?>
+    <script>
+        // Auto-refresh shuttle positions every 15 seconds for students
+        setInterval(() => {
+            location.reload();
+        }, 15000);
+    </script>
+    <?php endif; ?>
+    
     <?php if ($role === 'driver' && isset($current_assignment)): ?>
-    <script src="/OrangeRoute/assets/js/app.js"></script>
     <script>
         let isTracking = false;
         let watchId = null;

@@ -1,4 +1,4 @@
-# Database Migration Notes
+ # Database Migration Notes
 
 ## Category-Based Route System (Latest - Nov 2025)
 

@@ -17,18 +17,7 @@ $stats = [
 
 // Get recent activity
 $recentUsers = OrangeRoute\Database::fetchAll("SELECT username, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 5");
-$activeRoutes = OrangeRoute\Database::fetchAll("
-    SELECT r.route_name, r.distance_type as category, u.username as driver_name,
-           MAX(rl.updated_at) as last_update
-    FROM routes r
-    LEFT JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1
-    LEFT JOIN users u ON ra.driver_id = u.id
-    LEFT JOIN route_locations rl ON r.id = rl.route_id
-    WHERE r.is_active = 1
-    GROUP BY r.id
-    ORDER BY last_update DESC
-    LIMIT 5
-");
+$activeRoutes = OrangeRoute\Database::fetchAll("SELECT r.route_name, r.distance_type as category, u.username as driver_name, MAX(rl.created_at) as last_update FROM routes r LEFT JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1 LEFT JOIN users u ON ra.driver_id = u.id LEFT JOIN route_locations rl ON r.id = rl.route_id WHERE r.is_active = 1 GROUP BY r.id ORDER BY last_update DESC LIMIT 5");
 ?>
 <!DOCTYPE html>
 <html lang="en">

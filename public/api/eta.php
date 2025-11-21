@@ -23,7 +23,7 @@ $route = OrangeRoute\Database::fetch(
      WHERE r.id = ? AND rl.id = (
          SELECT id FROM route_locations
          WHERE route_id = r.id
-         ORDER BY updated_at DESC LIMIT 1
+         ORDER BY created_at DESC LIMIT 1
      )",
     [$userLng, $userLat, $routeId]
 );

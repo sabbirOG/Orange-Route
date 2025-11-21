@@ -1,5 +1,11 @@
 <?php
 
+// Error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+ini_set('error_log', __DIR__ . '/../logs/error.log');
+
 // Manual autoload for OrangeRoute classes
 spl_autoload_register(function ($class) {
     $prefix = 'OrangeRoute\\';
@@ -47,6 +53,31 @@ if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
 
 // Start session
 OrangeRoute\Session::start();
+
+// Lightweight auto-migration to ensure required columns exist
+try {
+    $pdo = OrangeRoute\Database::get();
+    // Ensure route_locations.created_at exists (older installs may lack it or only have updated_at)
+    $createdCol = $pdo->query("SHOW COLUMNS FROM route_locations LIKE 'created_at'")->fetch();
+    if (!$createdCol) {
+        $updatedCol = $pdo->query("SHOW COLUMNS FROM route_locations LIKE 'updated_at'")->fetch();
+        // Add created_at column (temporarily NULL to allow backfill)
+        $pdo->exec("ALTER TABLE route_locations ADD COLUMN created_at DATETIME NULL");
+        if ($updatedCol) {
+            // Backfill from updated_at if present
+            $pdo->exec("UPDATE route_locations SET created_at = updated_at WHERE created_at IS NULL");
+        }
+        // Enforce NOT NULL with default now
+        $pdo->exec("ALTER TABLE route_locations MODIFY created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP");
+        // Create index if not already present
+        try { $pdo->exec("CREATE INDEX idx_created ON route_locations(created_at)"); } catch (\PDOException $ie) { /* ignore duplicate */ }
+    }
+} catch (\Throwable $migrateErr) {
+    // In debug surface migration warnings; in production fail silently
+    if (($_ENV['APP_DEBUG'] ?? 'false') === 'true') {
+        error_log('[AutoMigration] ' . $migrateErr->getMessage());
+    }
+}
 
 // Helper functions
 function redirect(string $path): void {

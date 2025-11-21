@@ -12,7 +12,7 @@ try {
             rl.route_id,
             rl.latitude,
             rl.longitude,
-            rl.updated_at as created_at,
+            rl.created_at,
             r.route_name,
             r.distance_type as category,
             r.description
@@ -20,7 +20,7 @@ try {
         INNER JOIN routes r ON r.id = rl.route_id
         WHERE rl.id IN (
             SELECT MAX(id) FROM route_locations 
-            WHERE updated_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+            WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
             GROUP BY route_id
         )
         AND r.is_active = 1
@@ -36,7 +36,8 @@ try {
                 'description' => $loc['description'],
                 'latitude' => (float) $loc['latitude'],
                 'longitude' => (float) $loc['longitude'],
-                'updated_at' => $loc['created_at']
+                'updated_at' => $loc['created_at'],
+                'created_at' => $loc['created_at']
             ];
         }, $locations)
     ]);
