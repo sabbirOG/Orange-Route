@@ -72,7 +72,7 @@ elseif ($role === 'driver') {
 
 // ==================== STUDENT DASHBOARD ====================
 else {
-    // Get all active routes with real-time location
+    // Get only routes that are actively tracking RIGHT NOW (within last 5 minutes)
     $active_routes = OrangeRoute\Database::fetchAll("
         SELECT 
             r.id,
@@ -87,19 +87,19 @@ else {
             rl.speed,
             TIMESTAMPDIFF(MINUTE, rl.created_at, NOW()) as minutes_ago
         FROM routes r
-        LEFT JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1
-        LEFT JOIN users u ON ra.driver_id = u.id
-        LEFT JOIN (
+        INNER JOIN route_assignments ra ON r.id = ra.route_id AND ra.is_current = 1
+        INNER JOIN users u ON ra.driver_id = u.id
+        INNER JOIN (
             SELECT route_id, latitude, longitude, created_at, speed, heading, accuracy,
             ROW_NUMBER() OVER (PARTITION BY route_id ORDER BY created_at DESC) as rn
             FROM route_locations
-            WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
         ) rl ON r.id = rl.route_id AND rl.rn = 1
         WHERE r.is_active = 1
-            ORDER BY rl.created_at DESC
+        ORDER BY rl.created_at DESC
     ");
     
-    $stats['active_routes_now'] = count(array_filter($active_routes, fn($r) => $r['last_seen'] && $r['minutes_ago'] < 5));
+    $stats['active_routes_now'] = count($active_routes);
     $stats['total_routes'] = count($active_routes);
 }
 ?>
@@ -438,29 +438,8 @@ else {
                         <circle cx="12" cy="11" r="2"></circle>
                     </svg>
                     <h3 style="margin-bottom: 8px;">No Active Routes</h3>
-                    <p class="text-muted">All routes are currently inactive. Check back later!</p>
+                    <p class="text-muted">No routes are currently active. Check back later!</p>
                 </div>
-            <?php endif; ?>
-
-            <?php if (count($active_routes) > 0): ?>
-            <h3 class="section-title" style="margin-top: 20px;">All Routes</h3>
-            <?php foreach ($active_routes as $route): ?>
-            <div class="route-card">
-                <h4>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
-                        <circle cx="12" cy="11" r="2"></circle>
-                    </svg>
-                    <?= e($route['route_name']) ?>
-                    <span class="badge badge-<?= $route['category'] === 'long' ? 'primary' : 'success' ?>" style="margin-left: 8px; font-size: 11px;">
-                        <?= $route['category'] === 'long' ? 'Long Route' : 'Short Route' ?>
-                    </span>
-                </h4>
-                <?php if ($route['description']): ?>
-                <p><?= e($route['description']) ?></p>
-                <?php endif; ?>
-            </div>
-            <?php endforeach; ?>
             <?php endif; ?>
         <?php endif; ?>
     </div>
