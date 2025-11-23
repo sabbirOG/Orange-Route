@@ -127,9 +127,29 @@ $users = OrangeRoute\Database::fetchAll("
         </div>
         
         <h2>All Users (<?= count($users) ?>)</h2>
-        
-        <?php foreach ($users as $u): ?>
-        <div class="user-card">
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center;">
+            <input id="user-search" type="text" placeholder="Search by name or email..." style="flex:1; min-width:180px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+            <select id="user-role-filter" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                <option value="">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="driver">Driver</option>
+            </select>
+            <select id="user-status-filter" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+
+        <div id="user-list">
+        <?php foreach ($users as $i => $u): ?>
+        <div class="user-card" 
+            data-username="<?= strtolower(e($u['username'] ?? '')) ?>"
+            data-email="<?= strtolower(e($u['email'])) ?>"
+            data-role="<?= e($u['role']) ?>"
+            data-status="<?= $u['is_active'] ? 'active' : 'inactive' ?>"
+            data-index="<?= $i ?>">
             <div class="user-header">
                 <div>
                     <strong><?= e($u['username'] ?? $u['email']) ?></strong>
@@ -153,10 +173,9 @@ $users = OrangeRoute\Database::fetchAll("
                     Last login: Never
                 <?php endif; ?>
             </div>
-            
             <?php if ($u['role'] !== 'admin'): ?>
             <div class="user-actions">
-                <form method="POST" style="display: inline;">
+                <form method="POST" style="display: inline;" onsubmit="return confirmToggle(this, '<?= e($u['username'] ?? $u['email']) ?>', <?= $u['is_active'] ? 1 : 0 ?>);">
                     <input type="hidden" name="action" value="toggle_active">
                     <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
                     <button type="submit" class="btn btn-sm" style="background: <?= $u['is_active'] ? '#f44336' : '#4CAF50' ?>; color: white;">
@@ -172,6 +191,81 @@ $users = OrangeRoute\Database::fetchAll("
             <?php endif; ?>
         </div>
         <?php endforeach; ?>
+        </div>
+
+        <div id="user-pagination" style="display:none; justify-content:center; gap:8px; margin:16px 0;"></div>
+
+        <script>
+        // Confirmation dialog for activate/deactivate
+        function confirmToggle(form, name, isActive) {
+            return confirm((isActive ? 'Deactivate' : 'Activate') + ' user "' + name + '"?');
+        }
+
+        // Responsive tweaks
+        const style = document.createElement('style');
+        style.innerHTML = `
+        @media (max-width: 600px) {
+            .user-card { padding: 10px; font-size: 15px; }
+            .user-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .user-actions { flex-direction: column; gap: 6px; }
+            .container { padding: 6px; }
+        }
+        `;
+        document.head.appendChild(style);
+
+        // Pagination (if more than 20 users)
+        const userCards = Array.from(document.querySelectorAll('.user-card'));
+        const perPage = 20;
+        if (userCards.length > perPage) {
+            const pagination = document.getElementById('user-pagination');
+            pagination.style.display = 'flex';
+            let currentPage = 1;
+            const totalPages = Math.ceil(userCards.length / perPage);
+            function showPage(page) {
+                userCards.forEach(card => {
+                    const idx = parseInt(card.dataset.index);
+                    card.style.display = (idx >= (page-1)*perPage && idx < page*perPage) ? '' : 'none';
+                });
+                pagination.innerHTML = '';
+                for (let i = 1; i <= totalPages; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.className = 'btn btn-sm' + (i === page ? ' btn-primary' : '');
+                    btn.onclick = () => { currentPage = i; showPage(i); };
+                    pagination.appendChild(btn);
+                }
+            }
+            showPage(1);
+        }
+        </script>
+
+        <script>
+        // Simple client-side filter for users
+        const searchInput = document.getElementById('user-search');
+        const roleFilter = document.getElementById('user-role-filter');
+        const statusFilter = document.getElementById('user-status-filter');
+        const userCards = Array.from(document.querySelectorAll('.user-card'));
+
+        function filterUsers() {
+            const search = searchInput.value.trim().toLowerCase();
+            const role = roleFilter.value;
+            const status = statusFilter.value;
+            userCards.forEach(card => {
+                const username = card.dataset.username;
+                const email = card.dataset.email;
+                const cardRole = card.dataset.role;
+                const cardStatus = card.dataset.status;
+                let show = true;
+                if (search && !(username.includes(search) || email.includes(search))) show = false;
+                if (role && cardRole !== role) show = false;
+                if (status && cardStatus !== status) show = false;
+                card.style.display = show ? '' : 'none';
+            });
+        }
+        searchInput.addEventListener('input', filterUsers);
+        roleFilter.addEventListener('change', filterUsers);
+        statusFilter.addEventListener('change', filterUsers);
+        </script>
     </div>
 </body>
 </html>

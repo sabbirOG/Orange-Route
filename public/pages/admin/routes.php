@@ -16,12 +16,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'add') {
         $name = trim($_POST['route_name'] ?? '');
+        $from_location = trim($_POST['from_location'] ?? 'UIU');
+        $to_location = trim($_POST['to_location'] ?? '');
+        $distance_type = $_POST['distance_type'] ?? 'short';
         $description = trim($_POST['description'] ?? '');
         
         try {
             OrangeRoute\Database::query(
-                "INSERT INTO routes (route_name, description) VALUES (?, ?)",
-                [$name, $description]
+                "INSERT INTO routes (route_name, from_location, to_location, distance_type, description) VALUES (?, ?, ?, ?, ?)",
+                [$name, $from_location, $to_location, $distance_type, $description]
             );
             $success = 'Route added successfully';
         } catch (Exception $e) {
@@ -43,14 +46,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get all routes with stop count
+// Get all routes
 $routes = OrangeRoute\Database::fetchAll("
-    SELECT r.*, COUNT(rs.id) as stop_count
+    SELECT r.*
     FROM routes r
-    LEFT JOIN route_stops rs ON r.id = rs.route_id
-    GROUP BY r.id
-    ORDER BY r.created_at DESC
+    ORDER BY r.distance_type DESC, r.created_at DESC
 ");
+
+// Add route info display and separate by type
+$long_routes = [];
+$short_routes = [];
+
+foreach ($routes as &$route) {
+    if (empty($route['from_location'])) $route['from_location'] = 'UIU';
+    if (empty($route['to_location'])) $route['to_location'] = 'Unknown';
+    if (empty($route['distance_type'])) $route['distance_type'] = 'short';
+    
+    if ($route['distance_type'] === 'long') {
+        $long_routes[] = $route;
+    } else {
+        $short_routes[] = $route;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -108,50 +125,118 @@ $routes = OrangeRoute\Database::fetchAll("
                 <input type="hidden" name="action" value="add">
                 <div class="form-group">
                     <label>Route Name</label>
-                    <input type="text" name="route_name" required placeholder="Main Campus Loop">
+                    <input type="text" name="route_name" required placeholder="UIU to Kuril 1">
                 </div>
                 <div class="form-group">
-                    <label>Description</label>
+                    <label>From Location</label>
+                    <input type="text" name="from_location" value="UIU" required placeholder="UIU">
+                </div>
+                <div class="form-group">
+                    <label>To Location (Destination)</label>
+                    <input type="text" name="to_location" required placeholder="Kuril / Aftabnagar / Natunbazar">
+                </div>
+                <div class="form-group">
+                    <label>Route Type</label>
+                    <select name="distance_type" required class="form-control" style="height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px;">
+                        <option value="short">Short Route</option>
+                        <option value="long">Long Route</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description (Optional)</label>
                     <textarea name="description" rows="2" placeholder="Covers main academic buildings..."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Add Route</button>
             </form>
         </div>
         
-        <h2>All Routes (<?= count($routes) ?>)</h2>
+        <h2>Long Routes (<?= count($long_routes) ?>)</h2>
         
-        <?php foreach ($routes as $r): ?>
-        <div class="route-card" style="border-left-color: var(--primary);">
-            <div class="route-header">
-                <div>
-                    <strong style="font-size: 18px;"><?= e($r['route_name']) ?></strong>
-                    <?php if (!$r['is_active']): ?>
-                        <span class="badge badge-danger">Inactive</span>
-                    <?php endif; ?>
+        <?php if (count($long_routes) > 0): ?>
+            <?php foreach ($long_routes as $r): ?>
+            <div class="route-card" style="border-left-color: #2196F3;">
+                <div class="route-header">
+                    <div>
+                        <strong style="font-size: 18px;"><?= e($r['route_name']) ?></strong>
+                        <span class="badge badge-primary" style="margin-left: 8px;">
+                            Long Route
+                        </span>
+                        <?php if (!$r['is_active']): ?>
+                            <span class="badge badge-danger">Inactive</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <p style="font-size: 14px; margin: 8px 0; color: var(--text);">
+                    <strong><?= e($r['from_location']) ?> → <?= e($r['to_location']) ?></strong>
+                </p>
+                <?php if ($r['description']): ?>
+                <p style="font-size: 14px; margin: 8px 0; color: var(--text-light);"><?= e($r['description']) ?></p>
+                <?php endif; ?>
+                
+                <div class="route-actions">
+                    <a href="route_edit.php?route_id=<?= $r['id'] ?>" class="btn btn-sm" style="background: #2196F3; color: white;">
+                        Edit Route
+                    </a>
+                    <button onclick="toggleRouteStatus(<?= $r['id'] ?>, <?= $r['is_active'] ? 1 : 0 ?>)" class="btn btn-sm toggle-route-btn" data-route-id="<?= $r['id'] ?>" style="background: <?= $r['is_active'] ? '#FF9800' : '#4CAF50' ?>; color: white;">
+                        <?= $r['is_active'] ? 'Stop Route' : 'Start Route' ?>
+                    </button>
+                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this route?');">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="route_id" value="<?= $r['id'] ?>">
+                        <button type="submit" class="btn btn-sm" style="background: #757575; color: white;">Delete</button>
+                    </form>
                 </div>
             </div>
-            <?php if ($r['description']): ?>
-            <p style="font-size: 14px; margin: 8px 0;"><?= e($r['description']) ?></p>
-            <?php endif; ?>
-            <div class="text-muted" style="font-size: 14px;">
-                <?= $r['stop_count'] ?> stops defined
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="card" style="text-align: center; padding: 20px;">
+                <p class="text-muted">No long routes yet</p>
             </div>
-            
-            <div class="route-actions">
-                <a href="route_stops.php?route_id=<?= $r['id'] ?>" class="btn btn-sm" style="background: #2196F3; color: white;">
-                    Manage Shuttle
-                </a>
-                <button onclick="toggleRouteStatus(<?= $r['id'] ?>, <?= $r['is_active'] ? 1 : 0 ?>)" class="btn btn-sm toggle-route-btn" data-route-id="<?= $r['id'] ?>" style="background: <?= $r['is_active'] ? '#FF9800' : '#4CAF50' ?>; color: white;">
-                    <?= $r['is_active'] ? 'Stop Route' : 'Start Route' ?>
-                </button>
-                <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this route?');">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="route_id" value="<?= $r['id'] ?>">
-                    <button type="submit" class="btn btn-sm" style="background: #757575; color: white;">Delete</button>
-                </form>
+        <?php endif; ?>
+        
+        <h2 style="margin-top: 24px;">Short Routes (<?= count($short_routes) ?>)</h2>
+        
+        <?php if (count($short_routes) > 0): ?>
+            <?php foreach ($short_routes as $r): ?>
+            <div class="route-card" style="border-left-color: #4CAF50;">
+                <div class="route-header">
+                    <div>
+                        <strong style="font-size: 18px;"><?= e($r['route_name']) ?></strong>
+                        <span class="badge badge-success" style="margin-left: 8px;">
+                            Short Route
+                        </span>
+                        <?php if (!$r['is_active']): ?>
+                            <span class="badge badge-danger">Inactive</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <p style="font-size: 14px; margin: 8px 0; color: var(--text);">
+                    <strong><?= e($r['from_location']) ?> → <?= e($r['to_location']) ?></strong>
+                </p>
+                <?php if ($r['description']): ?>
+                <p style="font-size: 14px; margin: 8px 0; color: var(--text-light);"><?= e($r['description']) ?></p>
+                <?php endif; ?>
+                
+                <div class="route-actions">
+                    <a href="route_edit.php?route_id=<?= $r['id'] ?>" class="btn btn-sm" style="background: #2196F3; color: white;">
+                        Edit Route
+                    </a>
+                    <button onclick="toggleRouteStatus(<?= $r['id'] ?>, <?= $r['is_active'] ? 1 : 0 ?>)" class="btn btn-sm toggle-route-btn" data-route-id="<?= $r['id'] ?>" style="background: <?= $r['is_active'] ? '#FF9800' : '#4CAF50' ?>; color: white;">
+                        <?= $r['is_active'] ? 'Stop Route' : 'Start Route' ?>
+                    </button>
+                    <form method="POST" style="display: inline;" onsubmit="return confirm('Delete this route?');">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="route_id" value="<?= $r['id'] ?>">
+                        <button type="submit" class="btn btn-sm" style="background: #757575; color: white;">Delete</button>
+                    </form>
+                </div>
             </div>
-        </div>
-        <?php endforeach; ?>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="card" style="text-align: center; padding: 20px;">
+                <p class="text-muted">No short routes yet</p>
+            </div>
+        <?php endif; ?>
     </div>
     
     <script>

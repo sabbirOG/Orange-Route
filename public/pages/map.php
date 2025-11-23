@@ -77,6 +77,8 @@ else {
         SELECT 
             r.id,
             r.route_name,
+            r.from_location,
+            r.to_location,
             r.distance_type as category,
             r.description,
             r.is_active,
@@ -404,7 +406,12 @@ else {
                             </svg>
                         </div>
                         <div class="shuttle-info">
-                            <div class="shuttle-name"><?= e($route['route_name']) ?></div>
+                            <div class="shuttle-name">
+                                <?= e($route['from_location']) ?> → <?= e($route['to_location']) ?>
+                            </div>
+                            <div class="shuttle-meta" style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">
+                                <?= e($route['route_name']) ?>
+                            </div>
                             <div class="shuttle-meta">
                                 <span class="status-dot <?= $is_active ? 'status-active' : 'status-inactive' ?>"></span>
                                 <?php if ($is_active): ?>
