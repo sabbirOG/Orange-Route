@@ -62,12 +62,13 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
     <style>
         .filter-tabs {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 20px;
-            background: white;
-            padding: 8px;
-            border-radius: 12px;
-            box-shadow: var(--shadow-sm);
+            background: #f7f7f9;
+            padding: 4px 6px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
         .filter-tab {
             flex: 1;
@@ -143,13 +144,70 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
     <?php $title = 'Routes'; $backHref = 'map.php'; include __DIR__ . '/_partials/top_bar.php'; ?>
 
     <div class="container">
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <input id="route-search" type="text" placeholder="Search routes by name, location, or description..." style="flex:1;padding:10px;border-radius:8px;border:1px solid #ccc;font-size:15px;">
-            <button id="route-search-btn" class="btn btn-primary" style="padding:10px 18px;border-radius:8px;font-size:15px;">Search</button>
+        <div class="search-bar-outer" id="route-searchbar">
+            <input id="route-search" type="text" placeholder="Search..." class="search-bar-input">
+            <button id="route-search-btn" class="search-bar-btn" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
         </div>
+        <style>
+        .search-bar-outer {
+            display: flex;
+            align-items: center;
+            max-width: 420px;
+            width: 100%;
+            margin: 0 auto 16px auto;
+            background: #fff;
+            border-radius: 0;
+            border: 1.5px solid #e0e0e0;
+            overflow: hidden;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+        }
+        .search-bar-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            padding: 12px 18px;
+            font-size: 17px;
+            border-radius: 0;
+        }
+        .search-bar-btn {
+            background: #f57c3a;
+            border: none;
+            height: 44px;
+            width: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-bar-btn:hover {
+            background: #d95d1a;
+        }
+        .search-bar-btn svg {
+            display: block;
+        }
+        @media (max-width: 600px) {
+            .search-bar-outer { max-width: 100%; border-radius: 0; }
+            .search-bar-input { font-size: 15px; padding: 9px 10px; border-radius: 0; }
+            .search-bar-btn { height: 38px; width: 40px; border-radius: 0; }
+        }
+        </style>
+        <style>
+        @media (max-width: 600px) {
+            #route-search, #route-search-btn {
+                font-size: 14px !important;
+                height: 34px !important;
+                border-radius: 5px !important;
+            }
+        }
+        </style>
         <div class="filter-tabs">
-            <button class="filter-tab active" onclick="filterRoutes('short')">Short Routes</button>
-            <button class="filter-tab" onclick="filterRoutes('active')">Active Now</button>
+            <button class="filter-tab" onclick="filterRoutes('short')">Short Routes</button>
+            <button class="filter-tab active" onclick="filterRoutes('active')">Active Now</button>
             <button class="filter-tab" onclick="filterRoutes('long')">Long Routes</button>
         </div>
         
@@ -210,7 +268,7 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                 <?php if (!empty($active_long_routes)): ?>
                 <h2>Long Routes (<?= count($active_long_routes) ?>)</h2>
                 <?php foreach ($active_long_routes as $route): ?>
-                <div class="route-card" style="border-left-color: #2196F3;"
+                <div class="route-card" style="border-left-color: #2196F3; position: relative;"
                     data-name="<?= strtolower(e($route['route_name'])) ?>"
                     data-from="<?= strtolower(e($route['from_location'])) ?>"
                     data-to="<?= strtolower(e($route['to_location'])) ?>"
@@ -222,8 +280,11 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                                 <strong><?= e($route['from_location']) ?> → <?= e($route['to_location']) ?></strong>
                             </div>
                         </div>
-                        <span class="badge badge-primary">Long</span>
-                        <span class="badge badge-success" style="margin-left:8px;">Active</span>
+                        <span class="badge-row">
+                            <span class="live-badge-inline"><span class="live-dot"></span><span class="live-text">Live</span></span>
+                            <span class="badge badge-primary">Long</span>
+                            <span class="badge badge-success">Active</span>
+                        </span>
                     </div>
                     <?php if ($route['description']): ?>
                     <div class="route-description"><?= e($route['description']) ?></div>
@@ -234,7 +295,7 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                 <?php if (!empty($active_short_routes)): ?>
                 <h2 style="margin-top: 24px;">Short Routes (<?= count($active_short_routes) ?>)</h2>
                 <?php foreach ($active_short_routes as $route): ?>
-                <div class="route-card" style="border-left-color: #4CAF50;"
+                <div class="route-card" style="border-left-color: #4CAF50; position: relative;"
                     data-name="<?= strtolower(e($route['route_name'])) ?>"
                     data-from="<?= strtolower(e($route['from_location'])) ?>"
                     data-to="<?= strtolower(e($route['to_location'])) ?>"
@@ -246,8 +307,11 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                                 <strong><?= e($route['from_location']) ?> → <?= e($route['to_location']) ?></strong>
                             </div>
                         </div>
-                        <span class="badge badge-success">Short</span>
-                        <span class="badge badge-success" style="margin-left:8px;">Active</span>
+                        <span class="badge-row">
+                            <span class="live-badge-inline"><span class="live-dot"></span><span class="live-text">Live</span></span>
+                            <span class="badge badge-success">Short</span>
+                            <span class="badge badge-success">Active</span>
+                        </span>
                     </div>
                     <?php if ($route['description']): ?>
                     <div class="route-description"><?= e($route['description']) ?></div>
@@ -392,7 +456,8 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
             document.querySelectorAll('.filter-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            event.target.classList.add('active');
+            // Find the button for the type and activate it
+            document.querySelector('.filter-tab' + (type === 'short' ? ':nth-child(1)' : type === 'active' ? ':nth-child(2)' : ':nth-child(3)')).classList.add('active');
             const sections = document.querySelectorAll('.route-section');
             sections.forEach(section => {
                 section.classList.add('hidden');
@@ -417,21 +482,49 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                 filterRouteCards();
             }
         });
+        searchInput.addEventListener('input', filterRouteCards);
 
         function filterRouteCards() {
             const q = searchInput.value.trim().toLowerCase();
-            document.querySelectorAll('.route-section:not(.hidden) .route-card').forEach(card => {
+            const section = document.querySelector('.route-section:not(.hidden)');
+            let anyVisible = false;
+            section.querySelectorAll('.route-card').forEach(card => {
                 const name = card.dataset.name || '';
                 const from = card.dataset.from || '';
                 const to = card.dataset.to || '';
                 const desc = card.dataset.desc || '';
                 if (!q || name.includes(q) || from.includes(q) || to.includes(q) || desc.includes(q)) {
                     card.style.display = '';
+                    anyVisible = true;
                 } else {
                     card.style.display = 'none';
                 }
             });
+            let emptyMsg = section.querySelector('.no-search-results');
+            // Only show the 'No Routes Found' message if the search bar is not empty
+            if (!anyVisible && q) {
+                if (!emptyMsg) {
+                    emptyMsg = document.createElement('div');
+                    emptyMsg.className = 'empty-state no-search-results';
+                    emptyMsg.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 21s-6-5.5-6-10a6 6 0 1 1 12 0c0 4.5-6 10-6 10z"></path>
+                            <circle cx="12" cy="11" r="2"></circle>
+                        </svg>
+                        <h3>No Routes Found</h3>
+                        <p class="text-muted">No routes match your search.</p>
+                    `;
+                    section.appendChild(emptyMsg);
+                }
+            } else if (emptyMsg) {
+                emptyMsg.remove();
+            }
         }
+
+        // On page load, set default tab to 'Active Now'
+        window.addEventListener('DOMContentLoaded', function() {
+            filterRoutes('active');
+        });
     </script>
 </body>
 </html>

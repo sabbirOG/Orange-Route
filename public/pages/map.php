@@ -113,7 +113,9 @@ else {
     <meta name="theme-color" content="#FF6B35">
     <title><?= $role === 'admin' ? 'Admin' : ($role === 'driver' ? 'Driver' : 'Student') ?> Dashboard - OrangeRoute</title>
     <link rel="stylesheet" href="/OrangeRoute/assets/css/mobile.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="/OrangeRoute/assets/js/theme.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         .dashboard-header {
             background: linear-gradient(135deg, #FF6B35 0%, #FF8C61 100%);
@@ -178,7 +180,13 @@ else {
                     Track Your Routes
                 <?php endif; ?>
             </div>
-            <div class="welcome-sub"><?= e($user['email']) ?> • <?= ucfirst(e($role)) ?></div>
+            <div class="welcome-sub">
+            <?php if ($role === 'student'): ?>
+                <?= strtok(e($user['email']), '@') ?>
+            <?php else: ?>
+                <?= e($user['email']) ?> • <?= ucfirst(e($role)) ?>
+            <?php endif; ?>
+            </div>
         </div>
 
         <?php if ($role === 'admin'): ?>
@@ -389,6 +397,11 @@ else {
                 </div>
             </div>
 
+            <h3 class="section-title">Live Map</h3>
+            <div style="position:relative;width:100%;height:320px;margin-bottom:18px;">
+                <div id="liveMap" style="width:100%;height:320px;border-radius:16px;border:1px solid var(--border);min-height:220px;"></div>
+                <div id="liveMapOverlay" style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;align-items:center;justify-content:center;color:#888;font-size:1.1em;background:rgba(255,255,255,0.85);z-index:10;border-radius:16px;">No active shuttles to display</div>
+            </div>
             <h3 class="section-title">Live Routes</h3>
             <?php if (count($active_routes) > 0): ?>
                 <?php foreach ($active_routes as $route): ?>
@@ -455,11 +468,70 @@ else {
     
     <?php if ($role === 'student'): ?>
     <script>
-        // Auto-refresh shuttle positions every 15 seconds for students
-        setInterval(() => {
-            location.reload();
-        }, 15000);
+    // --- Live Map for Active Shuttles (Always Visible) ---
+    const activeRoutes = <?php echo json_encode($active_routes); ?>;
+    let map = L.map('liveMap', { zoomControl: true }).setView([23.8103, 90.4125], 12); // Center on Dhaka by default
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+    let markers = [];
+    // Use professional location marker icons (SVG data URIs)
+    const busIconRed = L.icon({
+        iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%23e53935" d="M16 2C9.373 2 4 7.373 4 14c0 7.732 10.25 15.25 11.021 15.8a1 1 0 0 0 1.158 0C17.75 29.25 28 21.732 28 14c0-6.627-5.373-12-12-12zm0 27.013C13.25 26.013 6 19.732 6 14c0-5.514 4.486-10 10-10s10 4.486 10 10c0 5.732-7.25 12.013-10 15.013z"/><circle cx="16" cy="14" r="5" fill="white"/><circle cx="16" cy="14" r="3" fill="%23e53935"/></svg>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+    });
+    const busIconGreen = L.icon({
+        iconUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="%2300c853" d="M16 2C9.373 2 4 7.373 4 14c0 7.732 10.25 15.25 11.021 15.8a1 1 0 0 0 1.158 0C17.75 29.25 28 21.732 28 14c0-6.627-5.373-12-12-12zm0 27.013C13.25 26.013 6 19.732 6 14c0-5.514 4.486-10 10-10s10 4.486 10 10c0 5.732-7.25 12.013-10 15.013z"/><circle cx="16" cy="14" r="5" fill="white"/><circle cx="16" cy="14" r="3" fill="%2300c853"/></svg>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+    });
+    function renderShuttles(routes) {
+        // Remove old markers
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        const overlay = document.getElementById('liveMapOverlay');
+        if (!routes || routes.length === 0) {
+            overlay.style.display = 'flex';
+            return;
+        } else {
+            overlay.style.display = 'none';
+        }
+        routes.forEach(route => {
+            if (route.latitude && route.longitude) {
+                let icon = route.category === 'long' ? busIconRed : busIconGreen;
+                let marker = L.marker([route.latitude, route.longitude], { icon }).addTo(map);
+                const gmapsUrl = `https://www.google.com/maps?q=${route.latitude},${route.longitude}`;
+                marker.bindPopup(`
+                    <b>${route.route_name}</b><br>
+                    ${route.from_location} → ${route.to_location}<br>
+                    <a href='${gmapsUrl}' target='_blank' style='color:#1976d2;text-decoration:underline;'>Open in Google Maps</a>
+                `);
+                markers.push(marker);
+            }
+        });
+        if (markers.length > 0) {
+            let group = new L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.2));
+        }
+    }
+    renderShuttles(activeRoutes);
+    // Refresh shuttle positions every 15 seconds
+    setInterval(() => {
+        fetch(window.location.pathname + '?ajax=1')
+            .then(res => res.json())
+            .then(data => renderShuttles(data))
+            .catch(() => {
+                const overlay = document.getElementById('liveMapOverlay');
+                overlay.textContent = 'Error loading live map';
+                overlay.style.display = 'flex';
+            });
+    }, 15000);
     </script>
+    <?php if (isset($_GET['ajax'])) { header('Content-Type: application/json'); echo json_encode($active_routes); exit; } ?>
     <?php endif; ?>
     
     <?php if ($role === 'driver' && isset($current_assignment)): ?>
