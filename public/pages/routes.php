@@ -25,7 +25,6 @@ $active_routes = OrangeRoute\Database::fetchAll("
         SELECT route_id,
         ROW_NUMBER() OVER (PARTITION BY route_id ORDER BY created_at DESC) as rn
         FROM route_locations
-        WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
     ) rl ON r.id = rl.route_id AND rl.rn = 1
     WHERE r.is_active = 1
     ORDER BY r.distance_type DESC, r.route_name ASC
@@ -207,7 +206,7 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
         </style>
         <div class="filter-tabs">
             <button class="filter-tab" onclick="filterRoutes('short')">Short Routes</button>
-            <button class="filter-tab active" onclick="filterRoutes('active')">Active Now</button>
+            <button class="filter-tab active" onclick="filterRoutes('active')">Live</button>
             <button class="filter-tab" onclick="filterRoutes('long')">Long Routes</button>
         </div>
         

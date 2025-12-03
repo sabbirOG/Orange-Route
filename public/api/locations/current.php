@@ -6,7 +6,7 @@ header('Content-Type: application/json');
 requireAuth();
 
 try {
-    // Get latest location for each route
+    // Get latest location for each route (no timeout)
     $locations = OrangeRoute\Database::fetchAll("
         SELECT 
             rl.route_id,
@@ -20,7 +20,6 @@ try {
         INNER JOIN routes r ON r.id = rl.route_id
         WHERE rl.id IN (
             SELECT MAX(id) FROM route_locations 
-            WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
             GROUP BY route_id
         )
         AND r.is_active = 1

@@ -22,7 +22,7 @@ $assignment = OrangeRoute\Database::fetch(
     <script src="/OrangeRoute/assets/js/theme.js"></script>
 </head>
 <body>
-    <?php $title = 'Driver Mode'; $backHref = 'map.php'; $rightActionHtml = '<button id="toggle-tracking" class="btn btn-primary" style="width: auto; padding: 8px 16px; min-height: auto;">Start Tracking</button>'; include __DIR__ . '/_partials/top_bar.php'; ?>
+    <?php $title = 'Driver Mode'; $backHref = 'map.php'; $rightActionHtml = '<button id="toggle-tracking" class="btn btn-primary" style="width: auto; padding: 8px 16px; min-height: auto;">Active</button>'; include __DIR__ . '/_partials/top_bar.php'; ?>
     
     <div class="container">
         <?php if ($assignment): ?>
@@ -36,7 +36,7 @@ $assignment = OrangeRoute\Database::fetch(
             
             <div class="card">
                 <h3>Location Tracking</h3>
-                <p class="text-muted" id="tracking-status">Not tracking</p>
+                <p class="text-muted" id="tracking-status">Shuttle is not active</p>
                 <p class="text-muted" id="last-update">No updates yet</p>
             </div>
         <?php else: ?>
@@ -78,10 +78,10 @@ $assignment = OrangeRoute\Database::fetch(
                 }
             });
             isTracking = true;
-            btn.textContent = 'Stop Tracking';
+            btn.textContent = 'Deactivate';
             btn.classList.remove('btn-primary');
             btn.classList.add('btn-secondary');
-            status.textContent = 'Tracking active';
+            status.textContent = 'Active the shuttle';
             status.style.color = 'var(--success)';
         }
         
@@ -89,10 +89,10 @@ $assignment = OrangeRoute\Database::fetch(
             App.stopWatching(watchId);
             watchId = null;
             isTracking = false;
-            btn.textContent = 'Start Tracking';
+            btn.textContent = 'Active';
             btn.classList.remove('btn-secondary');
             btn.classList.add('btn-primary');
-            status.textContent = 'Not tracking';
+            status.textContent = 'Shuttle is not active';
             status.style.color = 'var(--text-muted)';
         }
     </script>

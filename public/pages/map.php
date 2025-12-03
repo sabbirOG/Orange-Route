@@ -72,7 +72,7 @@ elseif ($role === 'driver') {
 
 // ==================== STUDENT DASHBOARD ====================
 else {
-    // Get only routes that are actively tracking RIGHT NOW (within last 5 minutes)
+    // Get all routes that are currently active (no timeout)
     $active_routes = OrangeRoute\Database::fetchAll("
         SELECT 
             r.id,
@@ -95,7 +95,6 @@ else {
             SELECT route_id, latitude, longitude, created_at, speed, heading, accuracy,
             ROW_NUMBER() OVER (PARTITION BY route_id ORDER BY created_at DESC) as rn
             FROM route_locations
-            WHERE created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
         ) rl ON r.id = rl.route_id AND rl.rn = 1
         WHERE r.is_active = 1
         ORDER BY rl.created_at DESC
@@ -310,12 +309,18 @@ else {
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M12 6v6l4 2"></path>
                         </svg>
-                        <?= $current_assignment['is_active'] ? 'Stop Tracking' : 'Start Tracking' ?>
+                        <?= $current_assignment['is_active'] ? 'Deactivate' : 'Active' ?>
                     </button>
-                    <div id="trackingStatus" class="tracking-status"><?= $current_assignment['is_active'] ? 'Tracking active...' : 'Not tracking' ?></div>
+                    <div id="trackingStatus" class="tracking-status">
+                        <?php if ($current_assignment['is_active']): ?>
+                            Tracking active • GPS updating…
+                        <?php else: ?>
+                            Tracking inactive
+                        <?php endif; ?>
+                    </div>
                     <?php if (isset($last_location)): ?>
                     <p style="font-size: 12px; color: var(--text-light); margin-top: 12px; text-align: center;">
-                        Last update: <?= date('M d, g:i A', strtotime($last_location['created_at'])) ?>
+                        Last updated: <?= date('M d, g:i A', strtotime($last_location['created_at'])) ?>
                     </p>
                     <?php endif; ?>
                 </div>
@@ -470,10 +475,46 @@ else {
     <script>
     // --- Live Map for Active Shuttles (Always Visible) ---
     const activeRoutes = <?php echo json_encode($active_routes); ?>;
-    let map = L.map('liveMap', { zoomControl: true }).setView([23.8103, 90.4125], 12); // Center on Dhaka by default
+    let map = L.map('liveMap', { zoomControl: true, attributionControl: false }).setView([23.8103, 90.4125], 12); // Center on Dhaka by default
+    // Add custom attribution-like control
+    L.Control.CustomAttribution = L.Control.extend({
+        onAdd: function(map) {
+            var div = L.DomUtil.create('div', 'leaflet-control-attribution leaflet-custom-attribution');
+            div.innerHTML = '<span>Track UIU Shuttles</span>';
+            return div;
+        // Add custom CSS for professional style
+        var style = document.createElement('style');
+        style.innerHTML = `
+            .leaflet-custom-attribution {
+                background: rgba(255,255,255,0.95);
+                color: #1976d2;
+                font-weight: 600;
+                font-size: 15px;
+                padding: 7px 18px;
+                border-radius: 18px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                margin-bottom: 18px;
+                margin-right: 10px;
+                letter-spacing: 0.5px;
+                border: 1px solid #e3e3e3;
+                transition: box-shadow 0.2s;
+                z-index: 800;
+            }
+            .leaflet-custom-attribution span {
+                display: inline-block;
+                vertical-align: middle;
+            }
+        `;
+        document.head.appendChild(style);
+        },
+        onRemove: function(map) {}
+    });
+    L.control.customAttribution = function(opts) {
+        return new L.Control.CustomAttribution(opts);
+    }
+    L.control.customAttribution({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
+        maxZoom: 19
     }).addTo(map);
     let markers = [];
     // Use professional location marker icons (SVG data URIs)
@@ -586,7 +627,6 @@ else {
                         heading: position.coords.heading || 0,
                         accuracy: position.coords.accuracy || 0
                     };
-                    
                     try {
                         const response = await fetch('../api/locations/update.php', {
                             method: 'POST',
@@ -595,8 +635,9 @@ else {
                         });
                         const result = await response.json();
                         if (result.success) {
-                            status.textContent = 'Tracking active • Updated ' + new Date().toLocaleTimeString();
+                            status.textContent = 'Tracking active • GPS updating…';
                             status.style.color = 'var(--success)';
+                            // Optionally, you can append a timestamp below if needed
                         }
                     } catch (error) {
                         console.error('Update failed:', error);
@@ -609,12 +650,11 @@ else {
                 },
                 { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
             );
-            
             isTracking = true;
-            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Stop Tracking';
+            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Deactivate';
             btn.classList.remove('inactive');
             btn.classList.add('active');
-            status.textContent = 'Tracking active...';
+            status.textContent = 'Tracking active • GPS updating…';
             status.style.color = 'var(--success)';
         }
         
@@ -624,10 +664,10 @@ else {
                 watchId = null;
             }
             isTracking = false;
-            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Start Tracking';
+            btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Active';
             btn.classList.remove('active');
             btn.classList.add('inactive');
-            status.textContent = 'Not tracking';
+            status.textContent = 'Tracking inactive';
             status.style.color = 'var(--text-light)';
         }
     </script>
