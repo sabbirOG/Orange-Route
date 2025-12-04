@@ -224,7 +224,7 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
             <?php else: ?>
                 <h2>Short Routes (<?= count($short_routes) ?>)</h2>
                 <?php foreach ($short_routes as $route): ?>
-                <div class="route-card" style="border-left-color: #4CAF50;"
+                <div class="route-card"
                     data-name="<?= strtolower(e($route['route_name'])) ?>"
                     data-from="<?= strtolower(e($route['from_location'])) ?>"
                     data-to="<?= strtolower(e($route['to_location'])) ?>"
@@ -267,7 +267,7 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                 <?php if (!empty($active_long_routes)): ?>
                 <h2>Long Routes (<?= count($active_long_routes) ?>)</h2>
                 <?php foreach ($active_long_routes as $route): ?>
-                <div class="route-card" style="border-left-color: #2196F3; position: relative;"
+                <div class="route-card"
                     data-name="<?= strtolower(e($route['route_name'])) ?>"
                     data-from="<?= strtolower(e($route['from_location'])) ?>"
                     data-to="<?= strtolower(e($route['to_location'])) ?>"
@@ -280,7 +280,9 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                             </div>
                         </div>
                         <span class="badge-row">
-                            <span class="live-badge-inline"><span class="live-dot"></span><span class="live-text">Live</span></span>
+                            <a href="https://www.google.com/maps?q=<?= $route['latitude'] ?? '' ?>,<?= $route['longitude'] ?? '' ?>" target="_blank" class="live-badge-btn">
+                                <span class="live-dot"></span><span class="live-text">Live</span>
+                            </a>
                             <span class="badge badge-primary">Long</span>
                             <span class="badge badge-success">Active</span>
                         </span>
@@ -294,7 +296,7 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                 <?php if (!empty($active_short_routes)): ?>
                 <h2 style="margin-top: 24px;">Short Routes (<?= count($active_short_routes) ?>)</h2>
                 <?php foreach ($active_short_routes as $route): ?>
-                <div class="route-card" style="border-left-color: #4CAF50; position: relative;"
+                <div class="route-card"
                     data-name="<?= strtolower(e($route['route_name'])) ?>"
                     data-from="<?= strtolower(e($route['from_location'])) ?>"
                     data-to="<?= strtolower(e($route['to_location'])) ?>"
@@ -307,7 +309,9 @@ list($active_long_routes, $active_short_routes) = split_routes_by_type($active_r
                             </div>
                         </div>
                         <span class="badge-row">
-                            <span class="live-badge-inline"><span class="live-dot"></span><span class="live-text">Live</span></span>
+                            <a href="https://www.google.com/maps?q=<?= $route['latitude'] ?? '' ?>,<?= $route['longitude'] ?? '' ?>" target="_blank" class="live-badge-btn">
+                                <span class="live-dot"></span><span class="live-text">Live</span>
+                            </a>
                             <span class="badge badge-success">Short</span>
                             <span class="badge badge-success">Active</span>
                         </span>
