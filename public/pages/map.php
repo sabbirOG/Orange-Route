@@ -411,7 +411,7 @@ else {
             <?php if (count($active_routes) > 0): ?>
                 <?php foreach ($active_routes as $route): ?>
                     <?php 
-                        $is_active = $route['last_seen'] && $route['minutes_ago'] < 5;
+                        $is_active = $route['is_active'];
                         $maps_url = ($route['latitude'] && $route['longitude']) 
                             ? 'https://www.google.com/maps?q=' . $route['latitude'] . ',' . $route['longitude']
                             : '#';
@@ -431,28 +431,14 @@ else {
                                 <?= e($route['route_name']) ?>
                             </div>
                             <div class="shuttle-meta">
-                                <span class="status-dot <?= $is_active ? 'status-active' : 'status-inactive' ?>"></span>
-                                <?php if ($is_active): ?>
-                                    Live • <?= $route['driver_name'] ? e($route['driver_name']) : 'No driver' ?>
-                                <?php else: ?>
-                                    Offline
-                                <?php endif; ?>
+                                <span class="status-dot status-active"></span>
+                                Live • <?= $route['driver_name'] ? e($route['driver_name']) : 'No driver' ?>
                                  • 
                                 <span class="badge badge-<?= $route['category'] === 'long' ? 'primary' : 'success' ?>" style="font-size: 10px; padding: 2px 6px;">
                                     <?= $route['category'] === 'long' ? 'Long' : 'Short' ?>
                                 </span>
                             </div>
-                            <?php if ($route['last_seen']): ?>
-                            <div class="shuttle-meta" style="font-size: 11px; margin-top: 2px;">
-                                <?php if ($route['minutes_ago'] < 1): ?>
-                                    Just now
-                                <?php elseif ($route['minutes_ago'] < 60): ?>
-                                    <?= $route['minutes_ago'] ?> min ago
-                                <?php else: ?>
-                                    <?= date('g:i A', strtotime($route['last_seen'])) ?>
-                                <?php endif; ?>
-                            </div>
-                            <?php endif; ?>
+                            <!-- Last updated timestamp can be shown if desired, but does not affect online status -->
                         </div>
                     </a>
                 <?php endforeach; ?>
